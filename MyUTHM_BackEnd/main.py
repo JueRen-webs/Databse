@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash
 import mysql.connector
 import jwt
 import datetime
+import db_connection;
 
 app = Flask(__name__)
 CORS(app)
@@ -11,14 +12,6 @@ CORS(app)
 # 🔐 JWT 数字签名密钥 (Authenticity)
 app.config['SECRET_KEY'] = 'uthm_super_secret_crypto_key_2026'
 
-# 创建一个连接数据库的函数
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",      # XAMPP 默认用户名
-        password="",      # XAMPP 默认密码为空
-        database="myuthm_db"
-    )
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -31,7 +24,7 @@ def login():
 
     try:
         # 1. 连接 MySQL 数据库
-        db = get_db_connection()
+        db = db_connection.get_db_connection()
         # dictionary=True 可以让结果变成字典格式，方便读取
         cursor = db.cursor(dictionary=True)
 
