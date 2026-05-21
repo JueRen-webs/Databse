@@ -10,8 +10,16 @@ import 'profile/profile_page.dart';
 import 'splash_page.dart';
 import 'login_page.dart';
 import 'theme/app_colors.dart'; // 引入颜色库
-
+import 'dart:io';
+class MyHttpOverrides extends HttpOverrides{
+  @override
+  HttpClient createHttpClient(SecurityContext? context){
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
 void main() {
+  HttpOverrides.global = MyHttpOverrides();
   runApp(const DigitalClassroomApp());
 }
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:uthm/theme/app_colors.dart';
-
+import '../logout_page.dart';
 // --- 导入组件 ---
 import 'components/profile_widgets.dart';
 import 'components/profile_cards.dart';
-import 'components/profile_buttons.dart';
+import 'academic_calender_page/profile_buttons.dart';
 import 'data/profile_repository.dart';
 
 class ProfilePage extends StatelessWidget {
