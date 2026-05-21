@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = 'uthm_super_secret_crypto_key_2026'
 
 # 🚀 核心：注册蓝图
 # 注册后，auth_bp 里面定义的所有路由（如 /login）都会自动挂载到主服务上
-app.register_blueprint(auth_bp)
+app.register_blueprint(login.auth_bp)
 
 if __name__ == '__main__':
     # 加上 ssl_context='adhoc' 自动生成 HTTPS 证书
