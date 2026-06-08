@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  sqflite: ^2.3.0
+  path: ^1.8.3
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -71,3 +73,4 @@ flutter:
     - assets/bluesky.mp4
     - assets/logo_body.png
     - assets/logo_dots.png
+    - assets/MyUTHM.db

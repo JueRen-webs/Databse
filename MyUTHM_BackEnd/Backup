@@ -1,0 +1,436 @@
+CREATE TABLE Locations (
+    Location_ID VARCHAR(50) PRIMARY KEY,
+    Location_Name VARCHAR(100) NOT NULL,
+    Location_URL VARCHAR(255)
+);
+
+CREATE TABLE Positions (
+    Position_ID VARCHAR(50) PRIMARY KEY,
+    Position_Name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Vehicle_Types (
+    Vehicle_Type_ID VARCHAR(50) PRIMARY KEY,
+    Details VARCHAR(255)
+);
+
+CREATE TABLE Facilities (
+    Facility_ID VARCHAR(50) PRIMARY KEY,
+    Facility_Name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Leave_Types (
+    Leave_Type_ID VARCHAR(50) PRIMARY KEY,
+    Leave_Name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Assignment_Types (
+    Assignment_Type_ID VARCHAR(50) PRIMARY KEY,
+    Details VARCHAR(255)
+);
+
+CREATE TABLE Submission_Statuses (
+    Submission_Status_ID VARCHAR(50) PRIMARY KEY,
+    Status_Type VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Complaints_Categories (
+    Complaint_Category_ID VARCHAR(50) PRIMARY KEY,
+    Category VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Complaint_Statuses (
+    Complaint_Status_ID VARCHAR(50) PRIMARY KEY,
+    Complaint_Status VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Reminder_Statuses (
+    Reminder_Status_ID VARCHAR(50) PRIMARY KEY,
+    Reminder_Status VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Clinic_List (
+    Clinic_ID VARCHAR(50) PRIMARY KEY,
+    Clinic_Name VARCHAR(100) NOT NULL,
+    Clinic_Address TEXT,
+    Clinic_Phone VARCHAR(20),
+    Type VARCHAR(50)
+);
+
+CREATE TABLE Appliances (
+    Appliance_ID VARCHAR(50) PRIMARY KEY,
+    Appliance_Name VARCHAR(100) NOT NULL,
+    Price DECIMAL(10, 2)
+);
+
+CREATE TABLE Hostels (
+    Hostel_ID VARCHAR(50) PRIMARY KEY,
+    Hostel_Name VARCHAR(100) NOT NULL,
+    Blocks VARCHAR(20),
+    Floor VARCHAR(20),
+    Room_Number VARCHAR(20)
+);
+
+CREATE TABLE Faculties (
+    Faculty_ID VARCHAR(50) PRIMARY KEY,
+    Faculty_Name VARCHAR(100) NOT NULL
+);
+
+-- =========================================================================
+-- MODULE 1: 核心身份与组织 (General & Users)
+-- =========================================================================
+
+CREATE TABLE Departments (
+    Department_ID VARCHAR(50) PRIMARY KEY,
+    Department_Name VARCHAR(100) NOT NULL,
+    Department_Email VARCHAR(100),
+    Department_Phone VARCHAR(20),
+    Location_ID VARCHAR(50),
+    FOREIGN KEY (Location_ID) REFERENCES Locations(Location_ID)
+);
+
+CREATE TABLE Users (
+    User_ID VARCHAR(50) PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Phone VARCHAR(20),
+    Role ENUM('Student', 'Lecturer', 'Admin') NOT NULL,
+    Password_Hash VARCHAR(255) NOT NULL,
+    FCM_Token VARCHAR(255),
+    Is_Active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE Logs (
+    Log_ID INT AUTO_INCREMENT PRIMARY KEY,
+    User_ID VARCHAR(50),
+    Time TIME,
+    Date DATE,
+    Details TEXT,
+    FOREIGN KEY (User_ID) REFERENCES Users(User_ID)
+);
+
+CREATE TABLE Students (
+    Student_ID VARCHAR(50) PRIMARY KEY, 
+    Obtained_Credits INT DEFAULT 0,
+    CGPA DECIMAL(4, 2) DEFAULT 0.00,
+    CCPA DECIMAL(4, 2) DEFAULT 0.00,
+    Faculty_ID VARCHAR(50),
+    FOREIGN KEY (Student_ID) REFERENCES Users(User_ID),
+    FOREIGN KEY (Faculty_ID) REFERENCES Faculties(Faculty_ID)
+);
+
+CREATE TABLE Finance_Accounts (
+    Account_ID VARCHAR(50) PRIMARY KEY,
+    Student_ID VARCHAR(50),
+    Total_Debit DECIMAL(10, 2) DEFAULT 0.00,
+    Total_Credit DECIMAL(10, 2) DEFAULT 0.00,
+//    Balance DECIMAL(10, 2) DEFAULT 0.00, 
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID)
+);
+
+CREATE TABLE Payment_Details (
+    Payment_ID VARCHAR(50) PRIMARY KEY,
+    Account_ID VARCHAR(50),
+    Item_Name VARCHAR(100),
+    Amount DECIMAL(10, 2),
+    Payment_Date DATE,
+    Status VARCHAR(50),
+    FOREIGN KEY (Account_ID) REFERENCES Finance_Accounts(Account_ID)
+);
+
+-- =========================================================================
+-- MODULE 3: 员工与人事 (Lecturer / Staff & HR)
+-- =========================================================================
+
+CREATE TABLE Staffs (
+    Staff_ID VARCHAR(50) PRIMARY KEY,
+    Department_ID VARCHAR(50),
+    Position_ID VARCHAR(50),
+    FOREIGN KEY (Staff_ID) REFERENCES Users(User_ID),
+    FOREIGN KEY (Department_ID) REFERENCES Departments(Department_ID),
+    FOREIGN KEY (Position_ID) REFERENCES Positions(Position_ID)
+);
+
+CREATE TABLE Staff_Attendances (
+    Staff_Attendance_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Date DATE,
+    In_Time TIME,
+    Out_Time TIME,
+//    Total_working_hour DECIMAL(5, 2), -- Derivable
+    Details TEXT,
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID)
+);
+
+CREATE TABLE Movements (
+    Movement_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Start_Date DATE,
+    End_Date DATE,
+    Location VARCHAR(100),
+    Purpose TEXT,
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID)
+);
+
+CREATE TABLE Medical_Records (
+    Record_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Clinic_ID VARCHAR(50),
+    Date DATE,
+    Charges DECIMAL(10, 2),
+//    Total_Charges DECIMAL(10, 2), -- Derivable
+//    Year_Charges DECIMAL(10, 2),  -- Derivable
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID),
+    FOREIGN KEY (Clinic_ID) REFERENCES Clinic_List(Clinic_ID)
+);
+
+CREATE TABLE Salaries (
+    Salary_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Salary_Date DATE,
+    Basic_Salary DECIMAL(10, 2),
+//    Day_Before_Salary INT, -- Derivable
+    Bonus DECIMAL(10, 2),
+//    EPF DECIMAL(10, 2),    -- Derivable
+//    SOCSO DECIMAL(10, 2),  -- Derivable
+//    Reserved_Tax DECIMAL(10, 2),
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID)
+);
+
+CREATE TABLE Leaves_Records (
+    Record_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Leave_Type_ID VARCHAR(50),
+    Available_Leave INT,
+    Leave_Taken INT,
+//    Leave_Balance INT, -- Derivable
+    Start_Date DATE,
+    End_Date DATE,
+    Days INT,
+    Note TEXT,
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID),
+    FOREIGN KEY (Leave_Type_ID) REFERENCES Leave_Types(Leave_Type_ID)
+);
+
+-- =========================================================================
+-- MODULE 4: 教务与课表 (Academic & Timetable)
+-- =========================================================================
+
+CREATE TABLE Courses (
+    Course_ID VARCHAR(50) PRIMARY KEY,
+    Course_Name VARCHAR(150) NOT NULL,
+    Course_Credits INT,
+    Max_Number_Students INT
+);
+
+CREATE TABLE Programmes (
+    Programme_ID VARCHAR(50) PRIMARY KEY,
+    Programme_Name VARCHAR(100) NOT NULL,
+    Programme_Credits INT
+);
+
+CREATE TABLE Sections (
+    Section_ID VARCHAR(50) PRIMARY KEY,
+    Course_ID VARCHAR(50),
+    Staff_ID VARCHAR(50),
+    Location_ID VARCHAR(50),
+    Section_Code VARCHAR(20),
+//    Days VARCHAR(50),
+    Start_Time TIME,
+    End_Time TIME,
+    Session_Year VARCHAR(20),
+    FOREIGN KEY (Course_ID) REFERENCES Courses(Course_ID),
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID),
+    FOREIGN KEY (Location_ID) REFERENCES Locations(Location_ID)
+);
+
+CREATE TABLE Courses_Enrollments (
+    Course_Enrollment_ID VARCHAR(50) PRIMARY KEY,
+    Section_ID VARCHAR(50),
+    Student_ID VARCHAR(50),
+    FOREIGN KEY (Section_ID) REFERENCES Sections(Section_ID),
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID)
+);
+
+CREATE TABLE Course_Attendances (
+    Course_Attendance_ID VARCHAR(50) PRIMARY KEY,
+    Course_Enrollment_ID VARCHAR(50),
+    Attendance VARCHAR(20),
+    Date DATE,
+    FOREIGN KEY (Course_Enrollment_ID) REFERENCES Courses_Enrollments(Course_Enrollment_ID)
+);
+
+CREATE TABLE Results (
+    Result_ID VARCHAR(50) PRIMARY KEY,
+    Course_Enrollment_ID VARCHAR(50),
+    Final_Grade VARCHAR(5),
+    Details TEXT,
+    FOREIGN KEY (Course_Enrollment_ID) REFERENCES Courses_Enrollments(Course_Enrollment_ID)
+);
+
+-- =========================================================================
+-- MODULE 5: 课业与作业 (Coursework & Assessments)
+-- =========================================================================
+
+CREATE TABLE Streams (
+    Stream_ID VARCHAR(50) PRIMARY KEY,
+    Staff_ID VARCHAR(50),
+    Title VARCHAR(150),
+    Content TEXT,
+    Created_At DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Staff_ID) REFERENCES Staffs(Staff_ID)
+);
+
+CREATE TABLE Learning_Materials (
+    Materials_ID VARCHAR(50) PRIMARY KEY,
+    Section_ID VARCHAR(50),
+    Title VARCHAR(150),
+    Size DECIMAL(10, 2), -- 可能是 MB 
+    Uploaded_Date DATETIME,
+    URL VARCHAR(255),
+    FOREIGN KEY (Section_ID) REFERENCES Sections(Section_ID)
+);
+
+CREATE TABLE Past_Year_Questions (
+    Past_Year_ID VARCHAR(50) PRIMARY KEY,
+    Course_ID VARCHAR(50),
+    Title VARCHAR(150),
+    Size DECIMAL(10, 2),
+    URL VARCHAR(255),
+    FOREIGN KEY (Course_ID) REFERENCES Courses(Course_ID)
+);
+
+CREATE TABLE Assessments (
+    Assessment_ID VARCHAR(50) PRIMARY KEY,
+    Section_ID VARCHAR(50),
+    Title VARCHAR(100),
+    Date DATE,
+    Start_Time TIME,
+    End_Time TIME,
+    FOREIGN KEY (Section_ID) REFERENCES Sections(Section_ID)
+);
+
+CREATE TABLE Assessment_Enrollments (
+    Assessment_Enrollment_ID VARCHAR(50) PRIMARY KEY,
+    Assessment_ID VARCHAR(50),
+    Student_ID VARCHAR(50),
+    marks DECIMAL(5, 2),
+    FOREIGN KEY (Assessment_ID) REFERENCES Assessments(Assessment_ID),
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID)
+);
+
+CREATE TABLE Assignments (
+    Assignment_ID VARCHAR(50) PRIMARY KEY,
+    Section_ID VARCHAR(50),
+    Assignment_Type_ID VARCHAR(50),
+    Assignment_Title VARCHAR(150),
+    Max_Members INT,
+    Due_Date DATETIME,
+    FOREIGN KEY (Section_ID) REFERENCES Sections(Section_ID),
+    FOREIGN KEY (Assignment_Type_ID) REFERENCES Assignment_Types(Assignment_Type_ID)
+);
+
+CREATE TABLE Group_Members (
+    Group_ID VARCHAR(50),
+    Assignment_ID VARCHAR(50),
+    Student_ID VARCHAR(50),
+    PRIMARY KEY (Group_ID, Student_ID), 
+    FOREIGN KEY (Assignment_ID) REFERENCES Assignments(Assignment_ID),
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID)
+);
+
+CREATE TABLE Submissions (
+    Submission_ID VARCHAR(50) PRIMARY KEY,
+    Assignment_ID VARCHAR(50),
+    Student_ID VARCHAR(50),
+    Group_ID VARCHAR(50) NULL,
+    Submission_Status_ID VARCHAR(50),
+//    Files VARCHAR(255),
+    Uploaded_Date DATETIME,
+    FOREIGN KEY (Assignment_ID) REFERENCES Assignments(Assignment_ID),
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID),
+    FOREIGN KEY (Submission_Status_ID) REFERENCES Submission_Statuses(Submission_Status_ID)
+);
+
+-- =========================================================================
+-- MODULE 6: 校园服务与宿舍 (Campus Services & Hostels)
+-- =========================================================================
+
+CREATE TABLE Vehicles (
+    Vehicle_ID VARCHAR(50) PRIMARY KEY,
+    User_ID VARCHAR(50),
+    Vehicle_Type_ID VARCHAR(50),
+    Plate_Number VARCHAR(20) NOT NULL,
+    Model VARCHAR(50),
+    Color VARCHAR(30),
+    Registration_Date DATE,
+    Session_Year VARCHAR(20),
+    FOREIGN KEY (User_ID) REFERENCES Users(User_ID),
+    FOREIGN KEY (Vehicle_Type_ID) REFERENCES Vehicle_Types(Vehicle_Type_ID)
+);
+
+CREATE TABLE Facility_Reservations (
+    Reservation_ID VARCHAR(50) PRIMARY KEY,
+    User_ID VARCHAR(50),
+    Facility_ID VARCHAR(50),
+    Date DATE,
+    TimeSlot VARCHAR(50),
+    FOREIGN KEY (User_ID) REFERENCES Users(User_ID),
+    FOREIGN KEY (Facility_ID) REFERENCES Facilities(Facility_ID)
+);
+
+CREATE TABLE Hostel_Registrations (
+    Reg_ID VARCHAR(50) PRIMARY KEY,
+    Student_ID VARCHAR(50),
+    Hostel_ID VARCHAR(50),
+    Check_In_Date DATE,
+    Check_Out_Date DATE,
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID),
+    FOREIGN KEY (Hostel_ID) REFERENCES Hostels(Hostel_ID)
+);
+
+CREATE TABLE Electrical_Stickers (
+    Electrical_Sticker_ID VARCHAR(50) PRIMARY KEY,
+    Student_ID VARCHAR(50),
+    Appliance_ID VARCHAR(50),
+    Number_Of_Appliance INT,
+    Expiry_Date DATE,
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID),
+    FOREIGN KEY (Appliance_ID) REFERENCES Appliances(Appliance_ID)
+);
+
+CREATE TABLE Hostel_Complaints (
+    Complaint_ID VARCHAR(50) PRIMARY KEY,
+    Student_ID VARCHAR(50),
+    Complaint_Category_ID VARCHAR(50),
+    Complaint_Status_ID VARCHAR(50),
+    Handled_By_Staff_ID VARCHAR(50) NULL, -- 处理人
+    Description TEXT,
+    FOREIGN KEY (Student_ID) REFERENCES Students(Student_ID),
+    FOREIGN KEY (Complaint_Category_ID) REFERENCES Complaints_Categories(Complaint_Category_ID),
+    FOREIGN KEY (Complaint_Status_ID) REFERENCES Complaint_Statuses(Complaint_Status_ID),
+    FOREIGN KEY (Handled_By_Staff_ID) REFERENCES Staffs(Staff_ID)
+);
+
+-- =========================================================================
+-- MODULE 7: 消息与提醒 (Notifications & Reminders)
+-- =========================================================================
+
+CREATE TABLE Notifications (
+    Notification_ID VARCHAR(50) PRIMARY KEY,
+    Category VARCHAR(50),
+    Title VARCHAR(150),
+    URL VARCHAR(255),
+    Created_Time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Reminders (
+    Reminder_ID VARCHAR(50) PRIMARY KEY,
+    User_ID VARCHAR(50),
+    Reminder_Status_ID VARCHAR(50),
+    Title VARCHAR(100),
+    Comment TEXT,
+    Due_Date DATETIME,
+    FOREIGN KEY (User_ID) REFERENCES Users(User_ID),
+    FOREIGN KEY (Reminder_Status_ID) REFERENCES Reminder_Statuses(Reminder_Status_ID)
+);
