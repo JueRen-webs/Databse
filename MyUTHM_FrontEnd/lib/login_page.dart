@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert'; // 用于 JSON 解析
+import 'package:http/http.dart' as http; // 引入 http 包
 import 'main.dart'; // 必须导入 main.dart 以使用 mainGlobalKey
 import 'theme/app_colors.dart';
 
@@ -13,33 +15,90 @@ class _LoginPageState extends State<LoginPage> {
   final _userController = TextEditingController();
   final _passController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false; // 添加加载状态
 
-  void _doLogin() {
-    final username = _userController.text.trim().toLowerCase();
+  // 将后端的 URL 定义为常量
+  // 注意：如果你使用 Android 模拟器测试，请使用 10.0.2.2 替代 localhost 或 127.0.0.1
+  // 如果是真机或 Web 测试，请填入你的电脑局域网 IP (例如 192.168.x.x)
+  final String apiUrl = "http://localhost:8000/users/login";
+
+  Future<void> _doLogin() async {
+    final username = _userController.text.trim().toUpperCase();
     final password = _passController.text;
 
-    DashboardRole? role;
-    if (username == "student" && password == "1234") {
-      role = DashboardRole.student;
-    } else if (username == "lecturer" && password == "5678") {
-      role = DashboardRole.lecturer;
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter username and password")),
+      );
+      return;
     }
 
-    if (role != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainEntryPage(
-            key: mainGlobalKey,
-            role: role!,
-          ),
-        ),
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 发送 POST 请求到 FastAPI 后端
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "user_id": username,        // 👈 改成 user_id
+          "password_hash": password,  // 👈 改成 password_hash
+        }),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Username or Password incorrect")),
-      );
+
+      // 检查 HTTP 状态码
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // 假设你的后端返回类似 {"role": "student"} 或 {"role": "lecturer"}
+        final String? userRole = responseData['role'];
+
+        DashboardRole? role;
+        if (userRole?.toLowerCase() == "student") {
+          role = DashboardRole.student;
+        } else if (userRole?.toLowerCase() == "lecturer") {
+          role = DashboardRole.lecturer;
+        }
+
+        if (role != null) {
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MainEntryPage(
+                key: mainGlobalKey,
+                role: role!, // 这里使用的是从后端获取并转换的 role
+              ),
+            ),
+          );
+        } else {
+          _showError("Invalid role received from server.");
+        }
+      } else {
+        // 处理密码错误或账号不存在 (假设后端返回 400/401/404)
+        final errorData = jsonDecode(response.body);
+        _showError(errorData['detail'] ?? "Username or Password incorrect");
+      }
+    } catch (e) {
+      // 处理网络错误 (例如后端没开、IP不对)
+      _showError("Network error. Please check if backend is running.");
+      print("Login Error: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   @override
@@ -93,80 +152,12 @@ class _LoginPageState extends State<LoginPage> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _doLogin,
+                onPressed: _isLoading ? null : _doLogin,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: colors.brandPrimary),
-                child:
-                    const Text("LOGIN", style: TextStyle(color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class LogoutPage extends StatelessWidget {
-  const LogoutPage({super.key});
-
-  // Helper method to show the confirmation dialog
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm"),
-          content: const Text("Do you want to quit this app?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context), // Close dialog only
-              child: const Text("No"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                // Execute actual logout and clear navigation stack
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              },
-              child: const Text("Yes", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Dashboard"),
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.check_circle, size: 80, color: Colors.green),
-            const SizedBox(height: 16),
-            const Text(
-              "Welcome back, Admin!",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  _showLogoutDialog(context), // Trigger confirmation
-              icon: const Icon(Icons.logout),
-              label: const Text("Logout"),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("LOGIN", style: TextStyle(color: Colors.white)),
               ),
             ),
           ],

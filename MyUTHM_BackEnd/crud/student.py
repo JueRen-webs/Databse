@@ -5,13 +5,7 @@ from schemas.student import StudentCreate, PaymentDetailCreate
 def get_student_complete_profile(db: sqlite3.Connection, student_id: str) -> dict | None:
     cursor = db.cursor()
     query = """
-        SELECT u.User_ID, u.Name, u.Email, u.Phone, u.Role,
-               s.Obtained_Credits, s.CGPA, s.CCPA,
-               f.Facility_Name as Faculty_Name
-        FROM Users u
-        JOIN Students s ON u.User_ID = s.Student_ID
-        LEFT JOIN Facilities f ON s.Faculty_ID = f.Facility_ID
-        WHERE u.User_ID = ?
+        SELECT * FROM Students WHERE User_ID = ??
     """
     cursor.execute(query, (student_id,))
     row = cursor.fetchone()
