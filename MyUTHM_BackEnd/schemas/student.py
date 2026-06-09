@@ -4,10 +4,7 @@ from decimal import Decimal
 from datetime import date
 class StudentBase(BaseModel):
     Student_ID: str
-    Obtained_Credits: int = 0
-    CGPA: Decimal = Decimal('0.00')
-    CCPA: Decimal = Decimal('0.00')
-    Faculty_ID: Optional[str] = None
+    Programme_ID: str = None
 class StudentCreate(StudentBase): pass
 class Student(StudentBase):
     model_config = ConfigDict(from_attributes=True)
