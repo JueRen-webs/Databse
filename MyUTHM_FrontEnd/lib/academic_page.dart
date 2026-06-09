@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'academic_class.dart';
 
-// Color Constants
 const Color kPrimaryBlue = Color(0xFF0422A7);
-const Color kBackgroundColor = Color(0xFFF4F6FC);
-const Color kLightBlueBg = Color(0x1A0422A7);
-const Color kShadowColor = Color(0x1A9E9E9E);
-const Color kBorderColor = Color(0xFFEEEEEE);
+const Color kAccentBlue = Color(0xFF006BFF);
+const Color kBackgroundColor = Color(0xFFF5F8FE);
+const Color kTextDark = Color(0xFF071A52);
 
 class AcademicPage extends StatefulWidget {
   const AcademicPage({super.key});
@@ -17,292 +15,632 @@ class AcademicPage extends StatefulWidget {
 }
 
 class _AcademicPageState extends State<AcademicPage> {
-  // Selected State
-  String _selectedSession = "2025/2026";
-  String _selectedSemester = "1";
+  late PageController _semesterController;
+  int _currentSemesterIndex = 3;
 
-  // Options Lists
-  final List<String> _sessions = ["2025/2026", "2024/2025", "2023/2024"];
-  final List<String> _semesters = ["1", "2", "3"];
-
-  // Mock Data
-  final List<Map<String, String>> _allCourses = [
+  final List<Map<String, String>> _semesters = [
     {
-      "code": "BIC10103",
-      "name": "STRUKTUR DISKRIT",
-      "session": "2025/2026",
-      "semester": "1",
-      "lecturer": "sofianajwa",
-      "section": "S1"
+      "title": "Semester 1",
+      "status": "Past Semester",
+      "cpa": "3.96",
+      "classes": "5",
+      "credits": "20",
     },
     {
-      "code": "BIC20803",
-      "name": "SISTEM PENGOPERASIAN",
-      "session": "2025/2026",
-      "semester": "1",
-      "lecturer": "nayef",
-      "section": "S1"
+      "title": "Semester 2",
+      "status": "Past Semester",
+      "cpa": "3.97",
+      "classes": "5",
+      "credits": "19",
     },
     {
-      "code": "BIC20904",
-      "name": "PENGATURCARAAN BERORIENTASIKAN OBJEK",
-      "session": "2025/2026",
-      "semester": "1",
-      "lecturer": "faradila",
-      "section": "S1"
+      "title": "Semester 3",
+      "status": "Past Semester",
+      "cpa": "3.98",
+      "classes": "5",
+      "credits": "20",
     },
     {
-      "code": "BIM30503",
-      "name": "INTERAKSI MANUSIA-KOMPUTER",
-      "session": "2025/2026",
-      "semester": "1",
-      "lecturer": "hana",
-      "section": "S1"
+      "title": "Semester 4",
+      "status": "Current Semester",
+      "cpa": "3.98",
+      "classes": "4",
+      "credits": "20",
     },
     {
-      "code": "BIC21003",
-      "name": "DATA SCIENCE BASICS",
-      "session": "2025/2026",
-      "semester": "2",
-      "lecturer": "dr. lim",
-      "section": "S2"
-    },
-    {
-      "code": "UHB10102",
-      "name": "ENGLISH FOR ACADEMIC PURPOSES",
-      "session": "2024/2025",
-      "semester": "1",
-      "lecturer": "mr. smith",
-      "section": "S5"
+      "title": "Semester 5",
+      "status": "Next Semester",
+      "cpa": "-",
+      "classes": "-",
+      "credits": "-",
     },
   ];
 
+  final List<List<Map<String, dynamic>>> _coursesBySemester = [
+    [
+      {
+        "code": "BIC10204",
+        "name": "Algorithm",
+        "lecturer": "Malik",
+        "grade": "A",
+        "attendance": "100%",
+      },
+      {
+        "code": "BIC10503",
+        "name": "Computer Architecture",
+          "lecturer": "Sapiee",
+        "grade": "A",
+        "attendance": "99%",
+      },
+      {
+        "code": "BIC21102",
+        "name": "Professional Ethics And Occupational",
+        "lecturer": "Ezak",
+        "grade": "A-",
+        "attendance": "97%",
+      },
+      {
+        "code": "UHB13102",
+        "name": "English For General Communication",
+        "lecturer": "Liza",
+        "grade": "A",
+        "attendance": "98%",
+      },
+      {
+        "code": "UQB10102",
+        "name": "Integrity And Anti-Corruption",
+        "lecturer": "Khairol",
+        "grade": "A+",
+        "attendance": "100%",
+      },
+    ],
+    [
+      {
+        "code": "BIC10404",
+        "name": "Data Structure",
+        "lecturer": "Nordiana",
+        "grade": "A",
+        "attendance": "100%",
+      },
+      {
+        "code": "UQI11202",
+        "name": "Philosophy and Current Issues",
+        "lecturer": "Kamal",
+        "grade": "A+",
+        "attendance": "99%",
+      },
+      {
+        "code": "BIC21003",
+        "name": "System Analysis and Design",
+        "lecturer": "Faradila",
+        "grade": "A",
+        "attendance": "98%",
+      },
+      {
+        "code": "BIS10103",
+        "name": "Information Security Fundamentals",
+        "lecturer": "Bakiah",
+        "grade": "A-",
+        "attendance": "97%",
+      },
+      {
+        "code": "BIC31502",
+        "name": "Creativity and Innovation ",
+        "lecturer": "Suhaila",
+        "grade": "A",
+        "attendance": "100%",
+      },
+    ],
+    [
+      {
+        "code": "BIC20803",
+        "name": "Operating System",
+        "lecturer": "Nayef",
+        "grade": "A+",
+        "attendance": "100%",
+      },
+      {
+        "code": "BIC20904",
+        "name": "Object-Oriented Programing",
+        "lecturer": "Faradila",
+        "grade": "A",
+        "attendance": "98%",
+      },
+      {
+        "code": "BIM30503",
+        "name": "Human Computer Interaction",
+        "lecturer": "Hana",
+        "grade": "A+",
+        "attendance": "100%",
+      },
+      {
+        "code": "BIS20503",
+        "name": "Software Security",
+        "lecturer": "Hidayah",
+        "grade": "A",
+        "attendance": "99%",
+      },
+    ],
+    [
+      {
+        "code": "BIC21303",
+        "name": "Computer Networking",
+        "lecturer": "Rahmi",
+        "grade": "-",
+        "attendance": "100%",
+      },
+      {
+        "code": "BIC21404",
+        "name": "Database",
+        "lecturer": "Zana",
+        "grade": "-",
+        "attendance": "98%",
+      },
+      {
+        "code": "BIS20404",
+        "name": "Cryptography",
+        "lecturer": "Ziadah",
+        "grade": "-",
+        "attendance": "100%",
+      },
+      {
+        "code": "BIS20503",
+        "name": "Computer Crime And Digital Forensics",
+        "lecturer": "Azma",
+        "grade": "-",
+        "attendance": "99%",
+      },
+    ],
+    [],
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _semesterController = PageController(
+      viewportFraction: 0.78,
+      initialPage: _currentSemesterIndex,
+    );
+    _semesterController.addListener(_handleSemesterScroll);
+  }
+
+  @override
+  void dispose() {
+    _semesterController.removeListener(_handleSemesterScroll);
+    _semesterController.dispose();
+    super.dispose();
+  }
+
+  void _handleSemesterScroll() {
+    if (!_semesterController.hasClients ||
+        !_semesterController.position.haveDimensions) {
+      return;
+    }
+
+    final nextIndex = (_semesterController.page ?? _currentSemesterIndex)
+        .round()
+        .clamp(0, _semesters.length - 1);
+
+    if (nextIndex != _currentSemesterIndex) {
+      setState(() {
+        _currentSemesterIndex = nextIndex;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Filter logic
-    final filteredCourses = _allCourses.where((course) {
-      return course['session'] == _selectedSession &&
-          course['semester'] == _selectedSemester;
-    }).toList();
-
     return Scaffold(
       backgroundColor: kBackgroundColor,
       appBar: AppBar(
-        backgroundColor: kPrimaryBlue,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
         title: Text(
           "Academic Online Resources",
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
         ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
       ),
-      body: _buildCourseListView(filteredCourses),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildCourseListView(List<Map<String, String>> courses) {
-    return Column(
-      children: [
-        // --- Top Filter Area with Material 3 DropdownMenu ---
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: kShadowColor,
-                blurRadius: 5,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildM3Dropdown(
-                  label: "Session",
-                  initialValue: _selectedSession,
-                  items: _sessions,
-                  onSelected: (val) => setState(() => _selectedSession = val!),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildM3Dropdown(
-                  label: "Semester",
-                  initialValue: _selectedSemester,
-                  items: _semesters,
-                  onSelected: (val) => setState(() => _selectedSemester = val!),
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildBody() {
+    final currentCourses = _coursesBySemester[_currentSemesterIndex];
 
-        // Section Title
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          color: kLightBlueBg,
-          child: Row(
-            children: [
-              const Icon(Icons.class_, color: kPrimaryBlue, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                "Select Classroom",
-                style: GoogleFonts.poppins(
-                  color: kPrimaryBlue,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 18, bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSemesterCarousel(),
+          const SizedBox(height: 14),
+          _buildDots(),
+          const SizedBox(height: 22),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Stack(
+              children: [
+                Text(
+                  "My Classes",
+                  style: GoogleFonts.poppins(
+                    color: kTextDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-
-        // Course List
-        Expanded(
-          child: courses.isEmpty
-              ? _buildEmptyState()
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: courses.length,
-                  separatorBuilder: (ctx, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) => _buildCourseCard(courses[index]),
-                ),
-        ),
-      ],
+          const SizedBox(height: 18),
+          if (currentCourses.isEmpty)
+            _buildEmptyClasses()
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: currentCourses.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _buildCourseCard(currentCourses[index]);
+              },
+            ),
+        ],
+      ),
     );
   }
 
-  // --- Material 3 DropdownMenu with LayoutBuilder ---
-  Widget _buildM3Dropdown({
-    required String label,
-    required String initialValue,
-    required List<String> items,
-    required ValueChanged<String?> onSelected,
+  Widget _buildSemesterCarousel() {
+    return SizedBox(
+      height: 300,
+      child: PageView.builder(
+        controller: _semesterController,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _semesters.length,
+        onPageChanged: (index) {
+          setState(() => _currentSemesterIndex = index);
+        },
+        itemBuilder: (context, index) {
+          return AnimatedBuilder(
+            animation: _semesterController,
+            builder: (context, child) {
+              double scale = 1.0;
+              int selectedIndex = _currentSemesterIndex;
+
+              if (_semesterController.position.haveDimensions) {
+                final page = _semesterController.page ?? _currentSemesterIndex;
+                scale = (1 - ((page - index).abs() * 0.05)).clamp(0.94, 1.0);
+                selectedIndex = page.round().clamp(0, _semesters.length - 1);
+              }
+
+              return Transform.scale(
+                scale: scale,
+                child: _buildSemesterCard(
+                  _semesters[index],
+                  isSelected: index == selectedIndex,
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSemesterCard(
+    Map<String, String> semester, {
+    required bool isSelected,
   }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return DropdownMenu<String>(
-          width: constraints.maxWidth, // Matches the Expanded width
-          initialSelection: initialValue,
-          label: Text(label),
-          requestFocusOnTap: false, // Prevents keyboard on mobile
-          onSelected: onSelected,
-          dropdownMenuEntries: items.map((String item) {
-            return DropdownMenuEntry<String>(
-              value: item,
-              label: label == "Semester" ? "Semester $item" : item,
-            );
-          }).toList(),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kPrimaryBlue),
+    final bool isCurrent = semester["status"] == "Current Semester";
+
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 10,
+      ),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isSelected ? kAccentBlue : const Color(0xFFE8EEF8),
+          width: isSelected ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.school_outlined,
+                color: kPrimaryBlue,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              if (isCurrent)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF3FF),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    "Current",
+                    style: GoogleFonts.poppins(
+                      color: kPrimaryBlue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            semester["title"]!,
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: kPrimaryBlue,
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: kBorderColor),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Keep going, you're doing great!✨ ",
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: const Color(0xFF46537A),
             ),
+          ),
+          const Spacer(),
+          Divider(
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _simpleInfo(
+                "Current CPA",
+                semester["cpa"]!,
+              ),
+              _verticalDivider(),
+              _simpleInfo(
+                "Classes",
+                semester["classes"]!,
+              ),
+              _verticalDivider(),
+              _simpleInfo(
+                "Credits",
+                semester["credits"]!,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_semesters.length, (index) {
+        final isActive = index == _currentSemesterIndex;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 7),
+          width: isActive ? 9 : 7,
+          height: isActive ? 9 : 7,
+          decoration: BoxDecoration(
+            color: isActive ? kPrimaryBlue : const Color(0xFFC7D8F3),
+            shape: BoxShape.circle,
           ),
         );
-      },
+      }),
     );
   }
 
-  Widget _buildCourseCard(Map<String, String> course) {
+  Widget _buildEmptyClasses() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE8EEF8)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.menu_book_outlined,
+            color: Colors.grey.shade400,
+            size: 36,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "No classes for this semester",
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF7A859F),
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCourseCard(
+    Map<String, dynamic> course,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AcademicClassPage(courseData: course),
+            builder: (_) => AcademicClassPage(
+              courseData: Map<String, String>.from(
+                course.map(
+                  (key, value) => MapEntry(key, value.toString()),
+                ),
+              ),
+            ),
           ),
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 20,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorderColor, width: 1.0),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: kLightBlueBg,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.school, color: kPrimaryBlue, size: 20),
-            ),
-            const SizedBox(width: 16),
             Expanded(
+              flex: 5,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "${course['code']} : ${course['name']}",
-                    style: GoogleFonts.lato(
+                    course["name"],
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black87,
+                      fontSize: 16,
+                      color: kTextDark,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
-                    "Sem ${course['semester']} / ${course['session']}",
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.person_outline, size: 14, color: kPrimaryBlue),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${course['lecturer']} [${course['section']}]",
-                        style: GoogleFonts.lato(
-                          fontSize: 13,
-                          color: kPrimaryBlue,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    course["lecturer"],
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF7A859F),
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  Text(
+                    "Attendance",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: const Color(0xFF7A859F),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    course["attendance"],
+                    style: GoogleFonts.poppins(
+                      color: kPrimaryBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 48,
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16,
+              ),
+              color: Colors.grey.shade300,
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    "Grade",
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: const Color(0xFF7A859F),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    course["grade"],
+                    style: GoogleFonts.poppins(
+                      color: kPrimaryBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            "No courses found for this criteria.",
-            style: GoogleFonts.poppins(color: Colors.grey, fontSize: 14),
+  Widget _simpleInfo(
+    String title,
+    String value,
+  ) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: const Color(0xFF7A859F),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            color: kPrimaryBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _verticalDivider() {
+    return Container(
+      width: 1,
+      height: 42,
+      color: Colors.grey.shade300,
     );
   }
 }

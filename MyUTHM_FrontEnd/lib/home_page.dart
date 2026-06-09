@@ -1,30 +1,182 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart'; 
+// import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 引入第二个文件
-import 'home_page2.dart'; 
+import 'home_page2.dart';
+import 'theme/app_colors.dart';
+import 'uthm_social_links.dart';
 
 // 定义颜色常量
 const Color kPrimaryBlue = Color(0xFF0025CC);
 const Color kBackgroundColor = Color(0xFFF4F6FC);
-const Color kBorderColor = Colors.black; 
+const Color kBorderColor = Colors.black;
 
 // 课程表蓝色系配色
-const Color kTimetableHeaderColor = Color(0xFFBBDEFB); 
-const Color kTimetableCellColor = Color(0xFFE3F2FD);    
+const Color kTimetableHeaderColor = Color(0xFFBBDEFB);
+const Color kTimetableCellColor = Color(0xFFE3F2FD);
 
 // 定义跳转链接常量
-const String kMapLinkMain = 'https://www.google.com/maps/@1.8583141,103.0810745,16z?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA3M0gBUAM%3D'; // Main Campus Link
-const String kMapLinkPagoh = 'https://www.google.com/maps/search/UTHM+Pagoh'; // Pagoh Campus Link
+const String kMapLinkMain =
+    'https://www.google.com/maps/@1.8583141,103.0810745,16z?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA3M0gBUAM%3D'; // Main Campus Link
+const String kMapLinkPagoh =
+    'https://www.google.com/maps/search/UTHM+Pagoh'; // Pagoh Campus Link
 const String kFinancePaymentLink = 'https://epayment.uthm.edu.my';
 
 // 课表用的其他 Map Link
-const String kMapLinkA = 'https://www.google.com/maps/place/%E6%95%A6%E5%A4%A7%E7%94%B5%E8%84%91%E7%A7%91%E5%AD%A6%E5%AD%A6%E9%99%A2/@1.8604238,103.0818436,17z/data=!3m1!4b1!4m6!3m5!1s0x31d05eaa8065ca25:0x8a27d9f8074a220!8m2!3d1.8604238!4d103.0844185!16s%2Fg%2F11clgh1_b2?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
-const String kMapLinkB = 'https://www.google.com/maps/place/BLOK+B6/@1.8555161,103.0864496,18z/data=!4m6!3m5!1s0x31d05faf83d8ea07:0x126fb15625e89830!8m2!3d1.8555164!4d103.0872579!16s%2Fg%2F11kkyjs0nq?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
-const String kMapLinkC = 'www.google.com/maps/place/%E9%A9%AC%E6%9D%A5%E8%A5%BF%E4%BA%9A%E6%95%A6%E8%83%A1%E5%85%88%E7%BF%81%E5%A4%A7%E5%AD%A6/@1.8572653,103.0807981,17z/data=!4m6!3m5!1s0x31d05eaa459d0ab9:0x495f817bef16f0a1!8m2!3d1.8572606!4d103.0820799!16zL20vMGdyMXl6?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
+const String kMapLinkA =
+    'https://www.google.com/maps/place/%E6%95%A6%E5%A4%A7%E7%94%B5%E8%84%91%E7%A7%91%E5%AD%A6%E5%AD%A6%E9%99%A2/@1.8604238,103.0818436,17z/data=!3m1!4b1!4m6!3m5!1s0x31d05eaa8065ca25:0x8a27d9f8074a220!8m2!3d1.8604238!4d103.0844185!16s%2Fg%2F11clgh1_b2?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
+const String kMapLinkB =
+    'https://www.google.com/maps/place/BLOK+B6/@1.8555161,103.0864496,18z/data=!4m6!3m5!1s0x31d05faf83d8ea07:0x126fb15625e89830!8m2!3d1.8555164!4d103.0872579!16s%2Fg%2F11kkyjs0nq?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
+const String kMapLinkC =
+    'www.google.com/maps/place/%E9%A9%AC%E6%9D%A5%E8%A5%BF%E4%BA%9A%E6%95%A6%E8%83%A1%E5%85%88%E7%BF%81%E5%A4%A7%E5%AD%A6/@1.8572653,103.0807981,17z/data=!4m6!3m5!1s0x31d05eaa459d0ab9:0x495f817bef16f0a1!8m2!3d1.8572606!4d103.0820799!16zL20vMGdyMXl6?entry=ttu&g_ep=EgoyMDI1MTIwNy4wIKXMDSoKLDEwMDc5MjA2N0gBUAM%3D';
+
+Future<void> _launchCampusMapUrl(String urlString) async {
+  final Uri url = Uri.parse(urlString);
+  try {
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      debugPrint('Could not launch $url');
+    }
+  } catch (e) {
+    debugPrint('Error launching URL: $e');
+  }
+}
+
+void showCampusMapMenu(BuildContext context) {
+  final colors = context.colors;
+
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: '',
+    transitionDuration: const Duration(milliseconds: 200),
+    pageBuilder: (context, anim1, anim2) {
+      return Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            width: 320,
+            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 24),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primaryText.withValues(alpha: 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Select Campus",
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Navigate to your destination",
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: colors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildCampusMapOption(
+                  context,
+                  "Main Campus (Parit Raja)",
+                  Icons.business_rounded,
+                  kMapLinkMain,
+                ),
+                const SizedBox(height: 12),
+                _buildCampusMapOption(
+                  context,
+                  "Pagoh Campus",
+                  Icons.school_rounded,
+                  kMapLinkPagoh,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, anim1, anim2, child) {
+      return Transform.scale(
+        scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack).value,
+        child: child,
+      );
+    },
+  );
+}
+
+Widget _buildCampusMapOption(
+  BuildContext context,
+  String title,
+  IconData icon,
+  String link,
+) {
+  final colors = context.colors;
+
+  return InkWell(
+    onTap: () {
+      Navigator.pop(context);
+      _launchCampusMapUrl(link);
+    },
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      decoration: BoxDecoration(
+        color: colors.cardAlt,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: colors.brandPrimary.withValues(alpha: 0.14),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
+            ),
+            child: Icon(icon, color: colors.brandPrimary, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colors.primaryText,
+              ),
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: colors.secondaryText,
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 void main() {
   runApp(const MaterialApp(
@@ -51,6 +203,20 @@ class HomeScreen extends StatelessWidget {
 // ==========================================================
 // 2. 主页内容 (HomePageContent)
 // ==========================================================
+class _StudentScheduleItem {
+  const _StudentScheduleItem({
+    required this.start,
+    required this.end,
+    required this.title,
+    required this.location,
+  });
+
+  final String start;
+  final String end;
+  final String title;
+  final String location;
+}
+
 class HomePageContent extends StatefulWidget {
   const HomePageContent({super.key});
 
@@ -65,18 +231,21 @@ class _HomePageContentState extends State<HomePageContent> {
       "title": "Sad Test",
       "date": "27/02",
       "comment": "F2 Ground Floor",
+      "daysLeft": 2,
       "color": Colors.orange,
     },
     {
       "title": "Math Quiz",
       "date": "25/02",
       "comment": "Online Submission",
+      "daysLeft": 1,
       "color": Colors.red,
     },
     {
       "title": "History Proj",
       "date": "15/03",
       "comment": "Main Hall",
+      "daysLeft": 7,
       "color": Colors.green,
     },
   ];
@@ -101,8 +270,29 @@ class _HomePageContentState extends State<HomePageContent> {
 
   String _getFormattedDate() {
     var now = DateTime.now();
-    List<String> months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    List<String> weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    List<String> months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    List<String> weekDays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
     return "${weekDays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}";
   }
 
@@ -128,7 +318,7 @@ class _HomePageContentState extends State<HomePageContent> {
     }
   }
 
-  void _showMapMenu(BuildContext context) {
+  void showLegacyMapMenu(BuildContext context) {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -146,7 +336,7 @@ class _HomePageContentState extends State<HomePageContent> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha:0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   )
@@ -155,43 +345,30 @@ class _HomePageContentState extends State<HomePageContent> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    "Select Campus", 
-                    style: GoogleFonts.inter(
-                      fontSize: 20, 
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87
-                    )
-                  ),
+                  Text("Select Campus",
+                      style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87)),
                   const SizedBox(height: 8),
-                  Text(
-                    "Navigate to your destination", 
-                    style: GoogleFonts.inter(
-                      fontSize: 12, 
-                      color: Colors.grey.shade500
-                    )
-                  ),
+                  Text("Navigate to your destination",
+                      style: GoogleFonts.inter(
+                          fontSize: 12, color: Colors.grey.shade500)),
                   const SizedBox(height: 24),
-                  
+
                   // 选项 1: Main Campus
-                  _buildMinimalMapOption(
-                    context, 
-                    "Main Campus (Parit Raja)", 
-                    Icons.business_rounded, 
-                    Colors.redAccent, 
-                    kMapLinkMain
-                  ),
-                  
+                  buildLegacyMinimalMapOption(
+                      context,
+                      "Main Campus (Parit Raja)",
+                      Icons.business_rounded,
+                      Colors.redAccent,
+                      kMapLinkMain),
+
                   const SizedBox(height: 12), // 上下间距
-                  
+
                   // 选项 2: Pagoh Campus
-                  _buildMinimalMapOption(
-                    context, 
-                    "Pagoh Campus", 
-                    Icons.school_rounded, 
-                    Colors.blueAccent, 
-                    kMapLinkPagoh
-                  ),
+                  buildLegacyMinimalMapOption(context, "Pagoh Campus",
+                      Icons.school_rounded, Colors.blueAccent, kMapLinkPagoh),
                 ],
               ),
             ),
@@ -201,27 +378,17 @@ class _HomePageContentState extends State<HomePageContent> {
       // 添加缩放动画
       transitionBuilder: (context, anim1, anim2, child) {
         return Transform.scale(
-          scale: CurvedAnimation(parent: anim1, curve: Curves.easeOutBack).value,
+          scale:
+              CurvedAnimation(parent: anim1, curve: Curves.easeOutBack).value,
           child: child,
         );
       },
     );
   }
-  Widget _buildBrandIconButton({required String imageUrl, required String url}) {
-    return InkWell(
-      onTap: () => _launchURL(url),
-      child: Image.network(
-        imageUrl,
-        height: 30, // Adjust size to match your design
-        width: 30,
-        fit: BoxFit.contain,
-        // Fallback if image fails to load
-        errorBuilder: (context, error, stackTrace) => const Icon(Icons.link, color: Colors.black54),
-      ),
-    );
-  }
+
   // 简约风格的选项组件
-  Widget _buildMinimalMapOption(BuildContext context, String title, IconData icon, Color accentColor, String link) {
+  Widget buildLegacyMinimalMapOption(BuildContext context, String title,
+      IconData icon, Color accentColor, String link) {
     return InkWell(
       onTap: () {
         Navigator.pop(context);
@@ -242,22 +409,25 @@ class _HomePageContentState extends State<HomePageContent> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: accentColor.withValues(alpha:0.15), blurRadius: 8, offset: const Offset(0, 2))],
+                boxShadow: [
+                  BoxShadow(
+                      color: accentColor.withValues(alpha: 0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2))
+                ],
               ),
               child: Icon(icon, color: accentColor, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title, 
-                style: GoogleFonts.inter(
-                  fontSize: 14, 
-                  fontWeight: FontWeight.w600, 
-                  color: Colors.black87
-                )
-              ),
+              child: Text(title,
+                  style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87)),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey.shade400),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: Colors.grey.shade400),
           ],
         ),
       ),
@@ -265,6 +435,8 @@ class _HomePageContentState extends State<HomePageContent> {
   }
 
   Widget _buildMenuIcon(IconData icon, String label, {VoidCallback? onTap}) {
+    final colors = context.colors;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -272,86 +444,302 @@ class _HomePageContentState extends State<HomePageContent> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 32, color: Colors.black87),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: colors.brandPrimary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 19, color: colors.brandPrimary),
+          ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w500), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 10.5,
+              color: colors.primaryText,
+              fontWeight: FontWeight.w800,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildDailyTimetable() {
-    const double gapPadding = 8.0;
+    final colors = context.colors;
+    const items = [
+      _StudentScheduleItem(
+        start: '8:00 AM',
+        end: '10:00 AM',
+        title: 'Data Structures',
+        location: 'FSKTM BS1',
+      ),
+      _StudentScheduleItem(
+        start: '2:00 PM',
+        end: '4:00 PM',
+        title: 'Human Computer Interaction',
+        location: 'FSKTM BS1',
+      ),
+      _StudentScheduleItem(
+        start: '4:00 PM',
+        end: '6:00 PM',
+        title: 'Operating Systems',
+        location: 'FSKTM BS1',
+      ),
+    ];
+
     return Container(
-      height: 140,
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primaryText.withValues(alpha: 0.055),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Daily Timetable',
+                  style: GoogleFonts.inter(
+                    color: colors.primaryText,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...items.asMap().entries.map(
+                (entry) => _buildStudentTimelineRow(
+                  item: entry.value,
+                  isLast: entry.key == items.length - 1,
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentTimelineRow({
+    required _StudentScheduleItem item,
+    required bool isLast,
+  }) {
+    final colors = context.colors;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 62,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.start,
+                  style: GoogleFonts.inter(
+                    color: colors.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.end,
+                  style: GoogleFonts.inter(
+                    color: colors.secondaryText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: colors.brandPrimary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: colors.borderColor,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: colors.primaryText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    item.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: colors.secondaryText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDueDateReminderCard() {
+    final colors = context.colors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primaryText.withValues(alpha: 0.055),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Due Date Reminder',
+                  style: GoogleFonts.inter(
+                    color: colors.primaryText,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...reminders.map((item) => _buildDueReminderRow(item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDueReminderRow(Map<String, dynamic> item) {
+    final colors = context.colors;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.cardAlt,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _buildCourseOval(title: "DS", time: "8:00 - 10:00"),
-            const SizedBox(width: gapPadding),
-            _buildTimeGapArrow("4h"),
-            const SizedBox(width: gapPadding),
-            _buildCourseOval(title: "HCI", time: "2:00 - 4:00"),
-            const SizedBox(width: gapPadding),
-            _buildTimeGapArrow("0h"),
-            const SizedBox(width: gapPadding),
-            _buildCourseOval(title: "OS", time: "4:00 - 6:00"),
-          ],
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: colors.brandPrimary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.assignment_outlined,
+              color: colors.brandPrimary,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item['title'],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w800,
+                    color: colors.primaryText,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item['comment']} • ${item['date']} • ${item['daysLeft']} days left',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: colors.secondaryText,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: item['color'],
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildCourseOval({required String title, required String time}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          height: 45,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.grey.shade300, width: 1.0),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: GoogleFonts.poppins(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(time, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 2),
-        Text("FSKTM BS1", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _buildTimeGapArrow(String duration) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(duration, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
-        const Icon(Icons.arrow_right_alt, size: 30, color: Colors.black54),
-        const SizedBox(height: 20),
-      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -363,12 +751,16 @@ class _HomePageContentState extends State<HomePageContent> {
             children: [
               const VideoBackground(),
               Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.bottomLeft,
                     end: Alignment.topRight,
-                    stops: [0.0, 0.35],
-                    colors: [kPrimaryBlue, Colors.transparent],
+                    stops: const [0.0, 0.55, 1.0],
+                    colors: [
+                      colors.brandPrimary,
+                      colors.brandPrimary.withValues(alpha: 0.35),
+                      colors.surface.withValues(alpha: 0.10),
+                    ],
                   ),
                 ),
               ),
@@ -383,37 +775,53 @@ class _HomePageContentState extends State<HomePageContent> {
                       children: [
                         Text(
                           _getFormattedDate(),
-                          style: GoogleFonts.lato(
-                            color: const Color(0xE6FFFFFF),
+                          style: GoogleFonts.inter(
+                            color: colors.surface.withValues(alpha: 0.92),
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            shadows: [const Shadow(offset: Offset(0, 1), blurRadius: 2, color: Colors.black26)],
+                            shadows: [
+                              const Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 2,
+                                  color: Colors.black26)
+                            ],
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           "${_getGreeting()} Lee Rou",
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
+                          style: GoogleFonts.inter(
+                            color: colors.surface,
                             fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            shadows: [const Shadow(offset: Offset(0, 1), blurRadius: 4, color: Colors.black45)],
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              const Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 4,
+                                  color: Colors.black45)
+                            ],
                           ),
                         ),
                       ],
                     ),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0x4DFFFFFF),
+                        color: colors.surface.withValues(alpha: 0.30),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white30, width: 1),
+                        border: Border.all(
+                          color: colors.surface.withValues(alpha: 0.25),
+                          width: 1,
+                        ),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.phone, size: 24, color: Colors.white),
+                        icon:
+                            Icon(Icons.phone, size: 24, color: colors.surface),
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const EmergencyContactsPage()),
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const EmergencyContactsPage()),
                           );
                         },
                       ),
@@ -427,21 +835,25 @@ class _HomePageContentState extends State<HomePageContent> {
 
         // 下方内容区域
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 10),
-
               // ==========================================
               // 菜单区域
               // ==========================================
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: const [BoxShadow(color: Colors.black12, spreadRadius: 1, blurRadius: 5, offset: Offset(0, 2))],
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primaryText.withValues(alpha: 0.055),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -450,158 +862,95 @@ class _HomePageContentState extends State<HomePageContent> {
                       children: [
                         Expanded(
                           child: _buildMenuIcon(
-                            Icons.directions_bus_filled_outlined, 'Bus Tracking',
-                            onTap: () async => _launchURL('https://uthm.katsana.com/'),
+                            Icons.directions_bus_filled_outlined,
+                            'Bus Tracking',
+                            onTap: () async =>
+                                _launchURL('https://uthm.katsana.com/'),
                           ),
                         ),
                         Expanded(
                           child: _buildMenuIcon(
                             Icons.map_outlined, 'Campus Map',
                             // 调用优化后的 Map Menu
-                            onTap: () => _showMapMenu(context),
+                            onTap: () => showCampusMapMenu(context),
                           ),
                         ),
                         Expanded(
                           child: _buildMenuIcon(
-                            Icons.calendar_month_outlined, 'Timetable',
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TimetablePage())),
+                            Icons.calendar_month_outlined,
+                            'Timetable',
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TimetablePage())),
                           ),
                         ),
                         Expanded(
                           child: _buildMenuIcon(
-                            Icons.attach_money, 'Finance',
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FinancePage())),
+                            Icons.attach_money,
+                            'Finance',
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const FinancePage())),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     // 第二行
                     Row(
                       children: [
                         Expanded(
                           child: _buildMenuIcon(
-                            Icons.home_work_outlined, 
+                            Icons.home_work_outlined,
                             'Hostel',
                             // 调用 home_page2.dart 的 showHostelMenu
-                            onTap: () => showHostelMenu(context), 
+                            onTap: () => showHostelMenu(context),
                           ),
                         ),
                         Expanded(
-                          child: _buildMenuIcon(
-                            Icons.directions_car_filled_outlined, 
-                            'Vehicle',
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VehiclePage())),
-                          )
-                        ),
+                            child: _buildMenuIcon(
+                          Icons.directions_car_filled_outlined,
+                          'Vehicle',
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const VehiclePage())),
+                        )),
                         Expanded(
-                          child: _buildMenuIcon(
-                            Icons.school_outlined, 
-                            'Course',
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CoursePage())),
-                          )
-                        ),
+                            child: _buildMenuIcon(
+                          Icons.school_outlined,
+                          'Course',
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const CoursePage())),
+                        )),
                         Expanded(
-                          child: _buildMenuIcon(
-                            Icons.access_time, 
-                            'Reservation',
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReservationPage())),
-                          )
-                        ),
+                            child: _buildMenuIcon(
+                          Icons.access_time,
+                          'Reservation',
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ReservationPage())),
+                        )),
                       ],
                     ),
                   ],
                 ),
               ),
-              
-              const SizedBox(height: 24),
-              const Text("Daily Timetable", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
-              const SizedBox(height: 12),
+
+              const SizedBox(height: 16),
               _buildDailyTimetable(),
-              
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Colors.grey.shade300, width: 1)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Expanded(flex: 3, child: Text("Due Date Reminder", style: TextStyle(fontWeight: FontWeight.bold))),
-                          Expanded(flex: 2, child: Text("Date", style: TextStyle(fontWeight: FontWeight.bold))),
-                          Expanded(flex: 3, child: Text("Comment", style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                      ),
-                    ),
-                    ...reminders.map((item) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(color: item['color'], shape: BoxShape.circle),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(child: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-                                ],
-                              ),
-                            ),
-                            Expanded(flex: 2, child: Text(item['date'])),
-                            Expanded(flex: 3, child: Text(item['comment'], maxLines: 1, overflow: TextOverflow.ellipsis)),
-                          ],
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
+
+              const SizedBox(height: 16),
+              _buildDueDateReminderCard(),
               const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Facebook
-                  _buildBrandIconButton(
-                    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Facebook_Logo_(2019).png/600px-Facebook_Logo_(2019).png',
-                    url: 'https://www.facebook.com/uthmjohor/?locale=ms_MY',
-                  ),
-                  const SizedBox(width: 25),
-                  
-                  // Instagram
-                  _buildBrandIconButton(
-                    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/600px-Instagram_logo_2016.svg.png',
-                    url: 'https://www.instagram.com/uthmjohor/',
-                  ),
-                  const SizedBox(width: 25),
-                  
-                  // LinkedIn
-                  _buildBrandIconButton(
-                    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/LinkedIn_logo_initials.png/600px-LinkedIn_logo_initials.png',
-                    url: 'https://www.linkedin.com/school/universiti-tun-hussein-onn-malaysia/',
-                  ),
-                  const SizedBox(width: 25),
-                  
-                  // Website (Using an icon as it's not a "brand")
-                  InkWell(
-                    onTap: () => _launchURL('https://www.uthm.edu.my/en/'),
-                    child: const Icon(Icons.language, color: Colors.black54, size: 32),
-                  ),
-                ],
-              ),
+              const UthmSocialLinksRow(),
               const SizedBox(height: 120),
             ],
           ),
@@ -670,7 +1019,10 @@ class EmergencyContactsPage extends StatelessWidget {
 
   final List<Map<String, String>> contacts = const [
     {"name": "MERS 999 (Ambulance/Fire Rescue/Police)", "number": "999"},
-    {"name": "UTHM Auxiliary Police & Security Office - APSeM (24 Hours)", "number": "074533435"},
+    {
+      "name": "UTHM Auxiliary Police & Security Office - APSeM (24 Hours)",
+      "number": "074533435"
+    },
     {"name": "University Medical Centre (Parit Raja)", "number": "0198687854"},
     {"name": "University Medical Centre (Pagoh)", "number": "0199917137"},
     {"name": "UTHM OSHE", "number": "074537228"},
@@ -696,11 +1048,12 @@ class EmergencyContactsPage extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(context); 
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MockCallingPage(name: name, number: number),
+                    builder: (context) =>
+                        MockCallingPage(name: name, number: number),
                   ),
                 );
               },
@@ -717,7 +1070,8 @@ class EmergencyContactsPage extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Emergency Contacts", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("Emergency Contacts",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -737,15 +1091,23 @@ class EmergencyContactsPage extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: contacts.length,
-            separatorBuilder: (context, index) => const Divider(color: Colors.white30),
+            separatorBuilder: (context, index) =>
+                const Divider(color: Colors.white30),
             itemBuilder: (context, index) {
               final contact = contacts[index];
               return ListTile(
-                title: Text(contact['name']!, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13)),
-                subtitle: Text(contact['number']!, style: GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
+                title: Text(contact['name']!,
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13)),
+                subtitle: Text(contact['number']!,
+                    style:
+                        GoogleFonts.inter(color: Colors.white70, fontSize: 14)),
                 trailing: const Icon(Icons.phone, color: Colors.white),
                 onTap: () {
-                  _showConfirmation(context, contact['name']!, contact['number']!);
+                  _showConfirmation(
+                      context, contact['name']!, contact['number']!);
                 },
               );
             },
@@ -766,7 +1128,7 @@ class MockCallingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), 
+      backgroundColor: const Color(0xFF0F172A),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -784,7 +1146,10 @@ class MockCallingPage extends StatelessWidget {
                   child: Text(
                     name,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -834,15 +1199,22 @@ class FinancePage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey, width: 0.5)),
+                  border: Border(
+                      bottom: BorderSide(color: Colors.grey, width: 0.5)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("DETAILS FOR SESSION 202420251", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14)),
-                    InkWell(onTap: () => Navigator.pop(context), child: const Icon(Icons.close, size: 20, color: Colors.grey))
+                    Text("DETAILS FOR SESSION 202420251",
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold, fontSize: 14)),
+                    InkWell(
+                        onTap: () => Navigator.pop(context),
+                        child: const Icon(Icons.close,
+                            size: 20, color: Colors.grey))
                   ],
                 ),
               ),
@@ -852,30 +1224,58 @@ class FinancePage extends StatelessWidget {
                     children: [
                       Container(
                         color: const Color(0xFF000080),
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 12),
                         child: Row(
                           children: [
-                            Expanded(flex: 5, child: Text("FEES / SERVICES / FINES", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11))),
-                            Expanded(flex: 2, child: Text("CODE", textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11))),
-                            Expanded(flex: 2, child: Text("DEBIT (MYR)", textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11))),
+                            Expanded(
+                                flex: 5,
+                                child: Text("FEES / SERVICES / FINES",
+                                    style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11))),
+                            Expanded(
+                                flex: 2,
+                                child: Text("CODE",
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11))),
+                            Expanded(
+                                flex: 2,
+                                child: Text("DEBIT (MYR)",
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11))),
                           ],
                         ),
                       ),
-                      _buildDetailRow("Tabung Aktiviti Pelajar", "E15109", "20"),
-                      _buildDetailRow("Tabung Pusat Kesihatan Universiti", "E15221", "20"),
-                      _buildDetailRow("Yuran Pengajian Ijazah", "H79102", "700"),
+                      _buildDetailRow(
+                          "Tabung Aktiviti Pelajar", "E15109", "20"),
+                      _buildDetailRow(
+                          "Tabung Pusat Kesihatan Universiti", "E15221", "20"),
+                      _buildDetailRow(
+                          "Yuran Pengajian Ijazah", "H79102", "700"),
                       _buildDetailRow("Yuran Perkhidmatan ICT", "H79108", "25"),
                       _buildDetailRow("Yuran Dana Ihsan", "E15103", "10"),
                       _buildDetailRow("Tabung MHS", "E15110", "150"),
                       _buildDetailRow("Dana Wakaf Pendidikan", "E15511", "10"),
-                      _buildDetailRow("Yuran Perkhidmatan UTHM", "H79107", "110"),
+                      _buildDetailRow(
+                          "Yuran Perkhidmatan UTHM", "H79107", "110"),
                       _buildDetailRow("Tabung Ko-Kurikulum", "E15104", "200"),
                       _buildDetailRow("Tabung Khidmat Pelajar", "E15106", "25"),
                       _buildDetailRow("Tabung Pusat Sukan", "E15112", "150"),
                       _buildDetailRow("Tabung Alumni", "E15108", "100"),
-                      _buildDetailRow("Yuran Sijil Profesional (FSKTM)", "E80127", "125"),
-                      _buildDetailRow("Bayaran Pelekat Elektrik", "H73104", "18"),
-                      _buildDetailRow("Yuran Pendaftaran Ijazah", "H79105", "70"),
+                      _buildDetailRow(
+                          "Yuran Sijil Profesional (FSKTM)", "E80127", "125"),
+                      _buildDetailRow(
+                          "Bayaran Pelekat Elektrik", "H73104", "18"),
+                      _buildDetailRow(
+                          "Yuran Pendaftaran Ijazah", "H79105", "70"),
                       _buildDetailRow("Yuran Asrama Dalam", "H79112", "781"),
                     ],
                   ),
@@ -890,13 +1290,24 @@ class FinancePage extends StatelessWidget {
 
   Widget _buildDetailRow(String name, String code, String debit) {
     return Container(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200))),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text(name, style: GoogleFonts.inter(fontSize: 12))),
-          Expanded(flex: 2, child: Text(code, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12))),
-          Expanded(flex: 2, child: Text(debit, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 12))),
+          Expanded(
+              flex: 5,
+              child: Text(name, style: GoogleFonts.inter(fontSize: 12))),
+          Expanded(
+              flex: 2,
+              child: Text(code,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 12))),
+          Expanded(
+              flex: 2,
+              child: Text(debit,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 12))),
         ],
       ),
     );
@@ -907,11 +1318,15 @@ class FinancePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Finance", style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text("Finance",
+            style: GoogleFonts.inter(
+                color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -919,35 +1334,66 @@ class FinancePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300)),
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300)),
               child: Column(
                 children: [
                   Container(
-                    color: const Color(0xFF000080), 
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    color: const Color(0xFF000080),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     child: Row(
                       children: [
-                        Expanded(flex: 3, child: _buildHeaderText("SEMESTER/SESSION")),
-                        Expanded(flex: 2, child: _buildHeaderText("DEBIT\n(MYR)")),
-                        Expanded(flex: 2, child: _buildHeaderText("CREDIT\n(MYR)")),
-                        Expanded(flex: 2, child: _buildHeaderText("BALANCE\n(MYR)")),
-                        Expanded(flex: 2, child: _buildHeaderText("")), 
+                        Expanded(
+                            flex: 3,
+                            child: _buildHeaderText("SEMESTER/SESSION")),
+                        Expanded(
+                            flex: 2, child: _buildHeaderText("DEBIT\n(MYR)")),
+                        Expanded(
+                            flex: 2, child: _buildHeaderText("CREDIT\n(MYR)")),
+                        Expanded(
+                            flex: 2, child: _buildHeaderText("BALANCE\n(MYR)")),
+                        Expanded(flex: 2, child: _buildHeaderText("")),
                       ],
                     ),
                   ),
-                  _buildFinanceRow(context, "1 / 20242025", "2514", "2514", "0", "Details"),
-                  _buildFinanceRow(context, "2 / 20242025", "1664", "1664", "0", "Details"),
-                  _buildFinanceRow(context, "1 / 20252026", "1035", "1035", "0", "Details"),
-                  
+                  _buildFinanceRow(
+                      context, "1 / 20242025", "2514", "2514", "0", "Details"),
+                  _buildFinanceRow(
+                      context, "2 / 20242025", "1664", "1664", "0", "Details"),
+                  _buildFinanceRow(
+                      context, "1 / 20252026", "1035", "1035", "0", "Details"),
                   Container(
                     color: Colors.grey.shade200,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     child: Row(
                       children: [
-                        Expanded(flex: 3, child: Text("TOTAL", textAlign: TextAlign.right, style: GoogleFonts.inter(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text("5213", textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text("5213", textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text("0", textAlign: TextAlign.center, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.red))), 
+                        Expanded(
+                            flex: 3,
+                            child: Text("TOTAL",
+                                textAlign: TextAlign.right,
+                                style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 2,
+                            child: Text("5213",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 2,
+                            child: Text("5213",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 2,
+                            child: Text("0",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red))),
                         const Expanded(flex: 2, child: SizedBox()),
                       ],
                     ),
@@ -956,13 +1402,18 @@ class FinancePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-            Text("IMPORTANT REMINDER", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text("IMPORTANT REMINDER",
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 10),
-            _buildBulletPoint("Payment can be made by ONLINE PAYMENT : ", linkText: kFinancePaymentLink),
+            _buildBulletPoint("Payment can be made by ONLINE PAYMENT : ",
+                linkText: kFinancePaymentLink),
             const SizedBox(height: 8),
-            _buildBulletPoint("Failure to do so will result in cancellation of course registration, suspension of examination results and any other actions as imposed in the Student's Payment Rules and Regulations (Pekeliling Bendahari Bil. 10/2008)"),
+            _buildBulletPoint(
+                "Failure to do so will result in cancellation of course registration, suspension of examination results and any other actions as imposed in the Student's Payment Rules and Regulations (Pekeliling Bendahari Bil. 10/2008)"),
             const SizedBox(height: 20),
-            Text("Thank you for your cooperation.", style: GoogleFonts.inter(fontSize: 14)),
+            Text("Thank you for your cooperation.",
+                style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 80), // 留出底部按钮的空间
           ],
         ),
@@ -972,16 +1423,24 @@ class FinancePage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.05), offset: const Offset(0, -4), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                offset: const Offset(0, -4),
+                blurRadius: 10)
+          ],
         ),
         child: ElevatedButton.icon(
           onPressed: () => _launchURL(kFinancePaymentLink),
           icon: const Icon(Icons.payment, color: Colors.white),
-          label: Text("Make Payment Online", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+          label: Text("Make Payment Online",
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold, color: Colors.white)),
           style: ElevatedButton.styleFrom(
             backgroundColor: kPrimaryBlue,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ),
@@ -989,24 +1448,48 @@ class FinancePage extends StatelessWidget {
   }
 
   Widget _buildHeaderText(String text) {
-    return Text(text, textAlign: TextAlign.center, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10));
+    return Text(text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(
+            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10));
   }
 
-  Widget _buildFinanceRow(BuildContext context, String session, String debit, String credit, String balance, String action) {
+  Widget _buildFinanceRow(BuildContext context, String session, String debit,
+      String credit, String balance, String action) {
     return Container(
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200)), color: Colors.white),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+          color: Colors.white),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text(session, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11, color: Colors.black))),
-          Expanded(flex: 2, child: Text(debit, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11))),
-          Expanded(flex: 2, child: Text(credit, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11))),
-          Expanded(flex: 2, child: Text(balance, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11))),
           Expanded(
-            flex: 2, 
+              flex: 3,
+              child: Text(session,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.black))),
+          Expanded(
+              flex: 2,
+              child: Text(debit,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 11))),
+          Expanded(
+              flex: 2,
+              child: Text(credit,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 11))),
+          Expanded(
+              flex: 2,
+              child: Text(balance,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 11))),
+          Expanded(
+            flex: 2,
             child: InkWell(
               onTap: () => _showDetailsDialog(context),
-              child: Text(action, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 11, color: Colors.blue)),
+              child: Text(action,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 11, color: Colors.blue)),
             ),
           ),
         ],
@@ -1022,7 +1505,8 @@ class FinancePage extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: GoogleFonts.inter(color: Colors.black, fontSize: 13, height: 1.4),
+              style: GoogleFonts.inter(
+                  color: Colors.black, fontSize: 13, height: 1.4),
               children: [
                 TextSpan(text: text),
                 if (linkText != null)
@@ -1031,7 +1515,10 @@ class FinancePage extends StatelessWidget {
                       onTap: () => _launchURL(linkText),
                       child: Text(
                         linkText,
-                        style: GoogleFonts.inter(color: Colors.blue, decoration: TextDecoration.underline, fontSize: 13),
+                        style: GoogleFonts.inter(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                            fontSize: 13),
                       ),
                     ),
                   ),
@@ -1056,7 +1543,7 @@ class TimetablePage extends StatefulWidget {
 
 class _TimetablePageState extends State<TimetablePage> {
   // ignore: unused_field
-  bool _canPop = false; 
+  bool _canPop = true;
 
   @override
   Widget build(BuildContext context) {
@@ -1069,25 +1556,25 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 8,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
         Course(
           code: 'BIM30503',
           name: 'INTERAKSI MANUSIA KOMPUTER',
           location: 'I-PERP-BT9-GS',
-          startHour: 14, 
+          startHour: 14,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
         Course(
           code: 'BIC20803',
           name: 'SISTEM PENGOPERASIAN',
           location: 'I-FSKTM-BS1',
-          startHour: 16, 
+          startHour: 16,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
       ],
       'Tuesday': [
@@ -1095,8 +1582,8 @@ class _TimetablePageState extends State<TimetablePage> {
           code: 'BIC20904',
           name: 'PENGATURCARAAN BERORIENTASIKAN OBJEK',
           location: 'I-ISYS-ARAS 1',
-          startHour: 9, 
-          duration: 2,  
+          startHour: 9,
+          duration: 2,
           backgroundColor: Colors.white,
           mapUrl: kMapLinkA,
         ),
@@ -1104,7 +1591,7 @@ class _TimetablePageState extends State<TimetablePage> {
           code: 'BIC1013',
           name: 'STRUKTUR DISKRIT',
           location: 'I-PERP-BT10-GS',
-          startHour: 11, 
+          startHour: 11,
           duration: 2,
           backgroundColor: Colors.white,
           mapUrl: kMapLinkC,
@@ -1127,7 +1614,7 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 14,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
         Course(
           code: 'BIC20803',
@@ -1136,7 +1623,7 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 16,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
       ],
       'Thursday': [
@@ -1147,7 +1634,7 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 8,
           duration: 3,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkB, 
+          mapUrl: kMapLinkB,
         ),
         Course(
           code: 'BIS20503',
@@ -1156,7 +1643,7 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 14,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkC, 
+          mapUrl: kMapLinkC,
         ),
       ],
       'Friday': [
@@ -1167,7 +1654,7 @@ class _TimetablePageState extends State<TimetablePage> {
           startHour: 8,
           duration: 2,
           backgroundColor: Colors.white,
-          mapUrl: kMapLinkA, 
+          mapUrl: kMapLinkA,
         ),
       ],
     };
@@ -1205,7 +1692,7 @@ class _TimetablePageState extends State<TimetablePage> {
             },
           ),
         ),
-        body: TimetableGrid(schedule: weeklySchedule),
+        body: StudentTimetableGrid(schedule: weeklySchedule),
       ),
     );
   }
@@ -1214,11 +1701,11 @@ class _TimetablePageState extends State<TimetablePage> {
 class Course {
   final String code;
   final String name;
-  final String location; 
-  final int startHour;   
-  final int duration;    
+  final String location;
+  final int startHour;
+  final int duration;
   final Color backgroundColor;
-  final String mapUrl; 
+  final String mapUrl;
 
   Course({
     required this.code,
@@ -1231,17 +1718,319 @@ class Course {
   });
 }
 
+class StudentTimetableGrid extends StatelessWidget {
+  const StudentTimetableGrid({super.key, required this.schedule});
+
+  final Map<String, List<Course>> schedule;
+  final int startHour = 8;
+  final int endHour = 18;
+  final double cellHeight = 104;
+  final double timeSlotWidth = 112;
+  final double dayHeaderWidth = 82;
+  final List<String> days = const [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+  ];
+
+  Future<void> _launchMap(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        debugPrint('Could not launch $url');
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final totalGridWidth = timeSlotWidth * (endHour - startHour);
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 28),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border.all(color: colors.borderColor),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  children: [
+                    _StudentGridHeaderCell(width: dayHeaderWidth, text: 'Day'),
+                    ...days.map(
+                      (day) => _StudentGridDayCell(
+                        width: dayHeaderWidth,
+                        height: cellHeight,
+                        text: day,
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: List.generate(endHour - startHour, (index) {
+                            final hour = startHour + index;
+                            final label =
+                                '${hour.toString().padLeft(2, '0')}:00 - ${(hour + 1).toString().padLeft(2, '0')}:00';
+                            return _StudentGridHeaderCell(
+                              width: timeSlotWidth,
+                              text: label,
+                            );
+                          }),
+                        ),
+                        SizedBox(
+                          height: cellHeight * days.length,
+                          width: totalGridWidth,
+                          child: Stack(
+                            children: [
+                              ...List.generate(days.length, (dayIndex) {
+                                return Positioned(
+                                  top: dayIndex * cellHeight,
+                                  left: 0,
+                                  right: 0,
+                                  height: cellHeight,
+                                  child: Row(
+                                    children: List.generate(
+                                      endHour - startHour,
+                                      (_) => Container(
+                                        width: timeSlotWidth,
+                                        decoration: BoxDecoration(
+                                          color: colors.surface,
+                                          border: Border.all(
+                                            color: colors.borderColor,
+                                            width: 0.55,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                              ...days.asMap().entries.expand((entry) {
+                                final dayIndex = entry.key;
+                                final dayName = entry.value;
+                                final courses = schedule[dayName] ?? [];
+
+                                return courses.map((course) {
+                                  final left = (course.startHour - startHour) *
+                                      timeSlotWidth;
+                                  final top = dayIndex * cellHeight;
+                                  final width = course.duration * timeSlotWidth;
+
+                                  return Positioned(
+                                    left: left,
+                                    top: top,
+                                    width: width,
+                                    height: cellHeight,
+                                    child: _StudentTimetableSlotCard(
+                                      course: course,
+                                      onLocationTap: () =>
+                                          _launchMap(course.mapUrl),
+                                    ),
+                                  );
+                                });
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentGridHeaderCell extends StatelessWidget {
+  const _StudentGridHeaderCell({required this.width, required this.text});
+
+  final double width;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      width: width,
+      height: 50,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: colors.brandPrimary.withValues(alpha: 0.10),
+        border: Border.all(color: colors.borderColor, width: 0.7),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(
+          color: colors.primaryText,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentGridDayCell extends StatelessWidget {
+  const _StudentGridDayCell({
+    required this.width,
+    required this.height,
+    required this.text,
+  });
+
+  final double width;
+  final double height;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      width: width,
+      height: height,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: colors.cardAlt,
+        border: Border.all(color: colors.borderColor, width: 0.7),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(
+          color: colors.primaryText,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentTimetableSlotCard extends StatelessWidget {
+  const _StudentTimetableSlotCard({
+    required this.course,
+    required this.onLocationTap,
+  });
+
+  final Course course;
+  final VoidCallback onLocationTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+
+    return Container(
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.brandPrimary.withValues(alpha: 0.20)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primaryText.withValues(alpha: 0.055),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            course.code,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: colors.brandPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            course.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: colors.primaryText,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
+            ),
+          ),
+          const SizedBox(height: 5),
+          InkWell(
+            onTap: onLocationTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: colors.brandPrimary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                course.location,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: colors.primaryText,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class TimetableGrid extends StatelessWidget {
   final Map<String, List<Course>> schedule;
-  
-  final int startHour = 8;  
-  final int endHour = 18;   
-  final double cellHeight = 100.0; 
-  final double timeSlotWidth = 110.0; 
-  final double dayHeaderWidth = 80.0; 
-  
+
+  final int startHour = 8;
+  final int endHour = 18;
+  final double cellHeight = 100.0;
+  final double timeSlotWidth = 110.0;
+  final double dayHeaderWidth = 80.0;
+
   final List<String> days = const [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday'
   ];
 
   const TimetableGrid({super.key, required this.schedule});
@@ -1262,7 +2051,7 @@ class TimetableGrid extends StatelessWidget {
     double totalGridWidth = timeSlotWidth * (endHour - startHour);
 
     return SingleChildScrollView(
-      scrollDirection: Axis.vertical, 
+      scrollDirection: Axis.vertical,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1270,42 +2059,43 @@ class TimetableGrid extends StatelessWidget {
           Column(
             children: [
               Container(
-                height: 50, 
-                width: dayHeaderWidth, 
+                height: 50,
+                width: dayHeaderWidth,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: kTimetableHeaderColor, // 蓝色
-                  border: Border.all(color: kBorderColor, width: 1.5), 
+                  border: Border.all(color: kBorderColor, width: 1.5),
                 ),
                 child: Text(
-                  "Day", 
+                  "Day",
                   style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ),
               ...days.map((day) => Container(
-                height: cellHeight,
-                width: dayHeaderWidth,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: kTimetableCellColor, 
-                  border: Border.all(color: kBorderColor, width: 1.5), 
-                ),
-                child: Text(
-                  day, 
-                  textAlign: TextAlign.center, // Center text
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11, // CHANGED: Made the font size smaller (original was default ~14)
-                  ),
-                ),
-              )),
+                    height: cellHeight,
+                    width: dayHeaderWidth,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: kTimetableCellColor,
+                      border: Border.all(color: kBorderColor, width: 1.5),
+                    ),
+                    child: Text(
+                      day,
+                      textAlign: TextAlign.center, // Center text
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize:
+                            11, // CHANGED: Made the font size smaller (original was default ~14)
+                      ),
+                    ),
+                  )),
             ],
           ),
 
           // 右侧可滚动区域
           Expanded(
             child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal, 
+              scrollDirection: Axis.horizontal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1313,19 +2103,21 @@ class TimetableGrid extends StatelessWidget {
                   Row(
                     children: List.generate(endHour - startHour, (index) {
                       int h = startHour + index;
-                      String timeStr = "${h.toString().padLeft(2, '0')}:00 - ${(h+1).toString().padLeft(2, '0')}:00";
-                      
+                      String timeStr =
+                          "${h.toString().padLeft(2, '0')}:00 - ${(h + 1).toString().padLeft(2, '0')}:00";
+
                       return Container(
                         width: timeSlotWidth,
                         height: 50,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: kTimetableCellColor, // 浅蓝色
-                          border: Border.all(color: kBorderColor, width: 1.5), 
+                          border: Border.all(color: kBorderColor, width: 1.5),
                         ),
                         child: Text(
                           timeStr,
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.inter(
+                              fontSize: 12, fontWeight: FontWeight.bold),
                         ),
                       );
                     }),
@@ -1345,11 +2137,13 @@ class TimetableGrid extends StatelessWidget {
                             right: 0,
                             height: cellHeight,
                             child: Row(
-                              children: List.generate(endHour - startHour, (timeIndex) {
+                              children: List.generate(endHour - startHour,
+                                  (timeIndex) {
                                 return Container(
                                   width: timeSlotWidth,
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: kBorderColor, width: 0.5), 
+                                    border: Border.all(
+                                        color: kBorderColor, width: 0.5),
                                   ),
                                 );
                               }),
@@ -1365,10 +2159,11 @@ class TimetableGrid extends StatelessWidget {
 
                           return Stack(
                             children: courses.map((course) {
-                              double left = (course.startHour - startHour) * timeSlotWidth;
+                              double left = (course.startHour - startHour) *
+                                  timeSlotWidth;
                               double top = dayIndex * cellHeight;
                               double width = course.duration * timeSlotWidth;
-                              
+
                               return Positioned(
                                 left: left,
                                 top: top,
@@ -1376,10 +2171,12 @@ class TimetableGrid extends StatelessWidget {
                                 height: cellHeight,
                                 child: Container(
                                   margin: const EdgeInsets.all(0.5),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 8),
                                   decoration: BoxDecoration(
                                     color: course.backgroundColor,
-                                    border: Border.all(color: kBorderColor, width: 0.5),
+                                    border: Border.all(
+                                        color: kBorderColor, width: 0.5),
                                   ),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1396,17 +2193,19 @@ class TimetableGrid extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 6),
-                                      
                                       GestureDetector(
                                         onTap: () {
                                           _launchMap(course.mapUrl);
                                         },
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.black54),
-                                            borderRadius: BorderRadius.circular(4),
-                                            color: Colors.transparent, 
+                                            border: Border.all(
+                                                color: Colors.black54),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            color: Colors.transparent,
                                           ),
                                           child: Text(
                                             "[${course.location}]",

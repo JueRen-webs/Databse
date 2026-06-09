@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Color Constants
 const Color kPrimaryBlue = Color(0xFF0422A7);
 const Color kBackgroundColor = Color(0xFFF4F6FC);
-// const Color kCardBgColor = Color(0xFFEBEBEB); // Removed grey, will use White
-const Color kTextBlack = Colors.black87;
-const Color kTextGrey = Colors.grey;
+const Color kInk = Color(0xFF061128);
+const Color kMuted = Color(0xFF6B7280);
 
-// =======================================================
-//           CLASS 1: NOTIFICATION PAGE (List)
-// =======================================================
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
 
@@ -19,22 +14,65 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationPageState extends State<NotificationPage> {
-  // Notification Toggle State
   bool _isNotificationOn = true;
+
+  final List<_NewsItem> _news = const [
+    _NewsItem(
+      title:
+      'Tidur dalam kereta, ambil upah mesin rumput, jaga enam anak - demi segulung PhD',
+      time: '2h ago',
+      accent: Color(0xFF117E82),
+      icon: Icons.bedtime_rounded,
+      secondaryIcon: Icons.grass_rounded,
+    ),
+    _NewsItem(
+      title: 'Liputan Berita UTHM:\n7 Disember 2025',
+      time: '5h ago',
+      accent: Color(0xFF174EB9),
+      icon: Icons.description_rounded,
+      secondaryIcon: Icons.school_rounded,
+    ),
+    _NewsItem(
+      title:
+      'UTHM perkasa EduTourism berteraskan Ecohydrology, sokong agenda UNESCO, SDG dan TVET',
+      time: '1d ago',
+      accent: Color(0xFF73BDC1),
+      icon: Icons.public_rounded,
+      secondaryIcon: Icons.water_drop_rounded,
+    ),
+  ];
+
+  final List<_EventItem> _events = const [
+    _EventItem(day: '07', month: 'DEC', year: '2025', title: 'FESTKON UTHM'),
+    _EventItem(
+      day: '07',
+      month: 'DEC',
+      year: '2025',
+      title: 'Pertandingan Konsep Reka Bentuk Bangunan Canselori UTHM',
+    ),
+    _EventItem(
+      day: '15',
+      month: 'DEC',
+      year: '2025',
+      title: 'Program Audit Pengauditan Dalaman MS ISO 9001:2015',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBackgroundColor,
 
-      // --- AppBar ---
       appBar: AppBar(
-        backgroundColor: kPrimaryBlue,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          "Notification Page",
+          'Notification Page',
           style: GoogleFonts.poppins(
-            color: Colors.white,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
             fontSize: 18,
           ),
@@ -42,162 +80,352 @@ class _NotificationPageState extends State<NotificationPage> {
         centerTitle: true,
       ),
 
-      // --- Body Content ---
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Header Control Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "News",
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  color: const Color(0xFF00695C),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    "Notification Setting",
-                    style: GoogleFonts.poppins(
-                        fontSize: 12, color: Colors.black87),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 118),
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Notification Setting',
+                  style: GoogleFonts.poppins(
+                    color: kMuted,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(width: 8),
-                  Switch(
+                ),
+                const SizedBox(width: 12),
+                Transform.scale(
+                  scale: 0.92,
+                  child: Switch(
                     value: _isNotificationOn,
-                    activeThumbColor: kPrimaryBlue,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isNotificationOn = value;
-                      });
+                    activeThumbColor: Colors.white,
+                    activeTrackColor: const Color(0xFF006ED1),
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.grey.shade300,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (value) {
+                      setState(() => _isNotificationOn = value);
                     },
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 10),
+            const SizedBox(height: 24),
 
-          // News List
-          _buildNewsItem(
-            imageUrl:
-                "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=200&h=200&fit=crop",
-            title:
-                "Tidur dalam kereta, ambil upah mesin rumput, jaga enam anak - demi segulung PhD",
-          ),
-          const SizedBox(height: 12),
-          _buildNewsItem(
-            imageUrl:
-                "https://images.unsplash.com/photo-1557683316-973673baf926?w=200&h=200&fit=crop",
-            title: "Liputan Berita UTHM: 7 Disember 2025",
-          ),
-          const SizedBox(height: 12),
-          _buildNewsItem(
-            imageUrl:
-                "https://images.unsplash.com/photo-1577962917302-cd874c4e3169?w=200&h=200&fit=crop",
-            title:
-                "UTHM perkasa EduTourism berteraskan Ecohydrology, sokong agenda UNESCO, SDG dan TVET",
-          ),
+            _buildSectionHeader(
+              title: 'News',
+              showViewAll: false,
+            ),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
-          // Events Header
-          Text(
-            "Events",
+            ..._news.map(
+                  (item) =>
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildNewsCard(item),
+                  ),
+            ),
+
+            const SizedBox(height: 12),
+
+            _buildSectionHeader(
+              title: 'Events',
+              showViewAll: true,
+              onViewAll: () {},
+            ),
+
+            const SizedBox(height: 12),
+
+            ..._events.map(
+                  (item) =>
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildEventCard(item),
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required bool showViewAll,
+    VoidCallback? onViewAll,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
             style: GoogleFonts.poppins(
+              color: kPrimaryBlue,
               fontSize: 20,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+        ),
+        if (showViewAll)
+          TextButton(
+            onPressed: onViewAll,
+            style: TextButton.styleFrom(
+              foregroundColor: kPrimaryBlue,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: Size.zero,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'View all',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 21,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 
-          // Events List
-          _buildEventItem("07 Dec 2025 : FESTKON UTHM"),
-          const SizedBox(height: 8),
-          _buildEventItem(
-              "07 Dec 2025 : Pertandingan Konsep Reka Bentuk Bangunan Canselori UTHM"),
-          const SizedBox(height: 8),
-          _buildEventItem(
-              "15 Dec 2025 : Program Audit Persijilan Semula MS ISO 9001:2015"),
+  Widget _buildNewsCard(_NewsItem item) {
+    return InkWell(
+      onTap: () => _openDetail(item.title),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 118),
+        padding: const EdgeInsets.all(10),
+        decoration: _cardDecoration(),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildNewsIllustration(item),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: item.accent.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'NEWS',
+                            style: GoogleFonts.poppins(
+                              color: item.accent,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          item.time,
+                          style: GoogleFonts.poppins(
+                            color: kMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      item.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        color: kInk,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        height: 1.38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Bottom Spacing
-          const SizedBox(height: 40),
+  Widget _buildNewsIllustration(_NewsItem item) {
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            item.accent.withOpacity(0.78),
+            item.accent,
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -18,
+            bottom: -18,
+            child: Icon(
+              item.icon,
+              color: Colors.white.withOpacity(0.22),
+              size: 88,
+            ),
+          ),
+          Positioned(
+            left: 18,
+            top: 24,
+            child: Icon(
+              item.icon,
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                item.secondaryIcon,
+                color: Colors.white,
+                size: 21,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // --- Helper Widgets ---
-
-  Widget _buildNewsItem({required String imageUrl, required String title}) {
-    return GestureDetector(
-      // Click to navigate to details
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailPage(title: title),
-          ),
-        );
-      },
+  Widget _buildEventCard(_EventItem item) {
+    return InkWell(
+      onTap: () => _openDetail(item.title),
+      borderRadius: BorderRadius.circular(13),
       child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.white, // Changed to White
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            // Added shadow for better visibility on white bg
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
+        constraints: const BoxConstraints(minHeight: 72),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: _cardDecoration(),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                bottomLeft: Radius.circular(8),
-              ),
-              child: Image.network(
-                imageUrl,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-                errorBuilder: (ctx, err, stack) => Container(
-                  width: 100,
-                  height: 100,
-                  color: Colors.grey.shade300,
-                  child: const Icon(Icons.image_not_supported),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
+            SizedBox(
+              width: 66,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    item.month,
                     style: GoogleFonts.poppins(
+                      color: kPrimaryBlue,
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.w700,
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
+                  Text(
+                    item.day,
+                    style: GoogleFonts.poppins(
+                      color: kInk,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      height: 0.98,
+                    ),
+                  ),
+                  Text(
+                    item.year,
+                    style: GoogleFonts.poppins(
+                      color: kMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
+            ),
+            Container(
+              width: 1,
+              height: 44,
+              color: const Color(0xFFD8DFEA),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: kInk,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.22,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        color: kMuted,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'All day',
+                        style: GoogleFonts.poppins(
+                          color: kMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: kPrimaryBlue,
+              size: 26,
             ),
           ],
         ),
@@ -205,54 +433,60 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  Widget _buildEventItem(String title) {
-    return GestureDetector(
-      // Click to navigate to details
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EventDetailPage(title: title),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white, // Changed to White
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            // Added shadow
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 1),
-            ),
-          ],
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(13),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF1E293B).withOpacity(0.07),
+          blurRadius: 14,
+          offset: const Offset(0, 5),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
+
+    void _openDetail(String title) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EventDetailPage(title: title),
+        ),
+      );
+    }
+  }
+
+class _NewsItem {
+  final String title;
+  final String time;
+  final Color accent;
+  final IconData icon;
+  final IconData secondaryIcon;
+
+  const _NewsItem({
+    required this.title,
+    required this.time,
+    required this.accent,
+    required this.icon,
+    required this.secondaryIcon,
+  });
 }
 
-// =======================================================
-//           CLASS 2: EVENT DETAIL PAGE (Article)
-// =======================================================
+class _EventItem {
+  final String day;
+  final String month;
+  final String year;
+  final String title;
+
+  const _EventItem({
+    required this.day,
+    required this.month,
+    required this.year,
+    required this.title,
+  });
+}
+
 class EventDetailPage extends StatelessWidget {
   final String title;
 
@@ -262,75 +496,105 @@ class EventDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kPrimaryBlue),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: kPrimaryBlue,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Column(
-              children: [
-                Text("UTHM",
-                    style: GoogleFonts.poppins(
-                        color: kPrimaryBlue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22)),
-                Text("News Portal",
-                    style:
-                        GoogleFonts.poppins(color: Colors.black, fontSize: 12)),
-              ],
+            Text(
+              'UTHM',
+              style: GoogleFonts.poppins(
+                color: kPrimaryBlue,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+            ),
+            Text(
+              'News Portal',
+              style: GoogleFonts.poppins(
+                color: Colors.black,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.menu, color: Colors.red),
+            icon: const Icon(
+              Icons.menu,
+              color: Colors.red,
+            ),
             onPressed: () {},
           ),
         ],
       ),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 10,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 8),
             Center(
               child: Text(
-                "Home",
-                style: GoogleFonts.poppins(fontSize: 12, color: kTextGrey),
+                title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
             ),
+
+            const SizedBox(height: 8),
+
+            Center(
+              child: Text(
+                'Home',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: kMuted,
+                ),
+              ),
+            ),
+
             const SizedBox(height: 16),
+
             Text(
-              "Tidur dalam kereta, ambil upah mesin rumput, jaga enam anak - demi segulung PhD",
+              title,
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.black,
               ),
             ),
+
             const SizedBox(height: 8),
+
             Text(
-              "ALUMNI Disember 7, 2025",
-              style: GoogleFonts.poppins(fontSize: 11, color: kTextGrey),
+              'ALUMNI Disember 7, 2025',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: kMuted,
+              ),
             ),
+
             const SizedBox(height: 16),
+
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -341,29 +605,48 @@ class EventDetailPage extends StatelessWidget {
                 errorBuilder: (ctx, err, stack) => Container(
                   height: 250,
                   color: Colors.grey.shade300,
-                  child: const Center(child: Icon(Icons.image, size: 50)),
+                  child: const Center(
+                    child: Icon(
+                      Icons.image,
+                      size: 50,
+                    ),
+                  ),
                 ),
               ),
             ),
+
             const SizedBox(height: 12),
+
             Text(
-              "Oleh Suriayati Baharom",
+              'Oleh Suriayati Baharom',
               style: GoogleFonts.poppins(
-                  fontSize: 12, color: kTextGrey, fontStyle: FontStyle.italic),
+                fontSize: 12,
+                color: kMuted,
+                fontStyle: FontStyle.italic,
+              ),
             ),
+
             const SizedBox(height: 20),
+
             _buildArticleText(
-                "PAGOH - Bagi Nurul Zakiah Zamri Tan, 42 perjalanan menamatkan pengajian doktor falsafah (PhD) bukan sekadar pencapaian akademik, tetapi kisah perjuangan luar biasa seorang ibu, isteri dan pelajar yang bertarung dengan ujian hidup selama lebih lima tahun."),
+              'PAGOH - Bagi Nurul Zakiah Zamri Tan, 42 perjalanan menamatkan pengajian doktor falsafah (PhD) bukan sekadar pencapaian akademik, tetapi kisah perjuangan luar biasa seorang ibu, isteri dan pelajar yang bertarung dengan ujian hidup selama lebih lima tahun.',
+            ),
             _buildArticleText(
-                "Bermula pada tahun 2019 di bawah seliaan Profesor Madya Ts. Dr. Azrin Hani Abd Rashid, Fakulti Teknologi Kejuruteraan (FTK). Zakiah menempuh laluan penuh liku, dari tekanan kewangan, beban emosi, hingga tanggungjawab membesarkan enam anak tanpa pembantu."),
+              'Bermula pada tahun 2019 di bawah seliaan Profesor Madya Ts. Dr. Azrin Hani Abd Rashid, Fakulti Teknologi Kejuruteraan (FTK). Zakiah menempuh laluan penuh liku, dari tekanan kewangan, beban emosi, hingga tanggungjawab membesarkan enam anak tanpa pembantu.',
+            ),
             _buildArticleText(
-                "\"Saya pernah tidur dalam kereta dan mandi di hentian R&R Pagoh semata-mata mahu jimat masa dan kos ulang-alik.\""),
+              '"Saya pernah tidur dalam kereta dan mandi di hentian R&R Pagoh semata-mata mahu jimat masa dan kos ulang-alik."',
+            ),
             _buildArticleText(
-                "\"Anak-anak dijaga ibu mertua, dan saya siapkan makanan frozen untuk beberapa hari,\" ceritanya."),
+              '"Anak-anak dijaga ibu mertua, dan saya siapkan makanan frozen untuk beberapa hari," ceritanya.',
+            ),
             _buildArticleText(
-                "Lebih menyentuh hati, Zakiah turut mengambil upah memesin rumput, termasuk kawasan seluas empat ekar, selain bekerja sambilan sebagai pensyarah, mengemas homestay dan membuat rekaan grafik untuk menampung kehidupan."),
+              'Lebih menyentuh hati, Zakiah turut mengambil upah memesin rumput, termasuk kawasan seluas empat ekar, selain bekerja sambilan sebagai pensyarah, mengemas homestay dan membuat rekaan grafik untuk menampung kehidupan.',
+            ),
             _buildArticleText(
-                "\"Kenapa mesin rumput? Sebab itu satu-satunya kerja yang saya boleh buat waktu itu dan anehnya, bunyi mesin rumput itu menenangkan fikiran saya,\" ujarnya sambil tersenyum."),
+              '"Kenapa mesin rumput? Sebab itu satu-satunya kerja yang saya boleh buat waktu itu dan anehnya, bunyi mesin rumput itu menenangkan fikiran saya," ujarnya sambil tersenyum.',
+            ),
+
             const SizedBox(height: 40),
           ],
         ),
@@ -373,7 +656,7 @@ class EventDetailPage extends StatelessWidget {
 
   Widget _buildArticleText(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         text,
         style: GoogleFonts.poppins(

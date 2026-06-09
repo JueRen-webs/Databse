@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
-import 'package:uthm/login_page.dart';
+import 'package:uthm/login_page.dart'; 
 
 class SplashPage extends StatefulWidget {
   const SplashPage({Key? key}) : super(key: key);
@@ -12,7 +12,7 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-
+  
   // 核心动画定义
   late Animation<double> _eyeJump;
   late Animation<double> _fadeIn;
@@ -112,7 +112,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
               // ---------------------------------------------------------
               // 背景装饰层：带缩放、旋转、明暗动效的圆环
               // ---------------------------------------------------------
-
+              
               // 右上角背景圆
               Positioned(
                 top: -120,
@@ -128,7 +128,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-
+              
               // 左下角背景圆 (纯净圆圈)
               Positioned(
                 bottom: -100,
@@ -144,7 +144,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-
+              
               // ---------------------------------------------------------
               // 内容主体层
               // ---------------------------------------------------------
@@ -167,7 +167,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                         ],
                       ),
                       const SizedBox(height: 60),
-
+                      
                       // Slogan 动画展示
                       SlideTransition(
                         position: _sloganSlide,
@@ -185,8 +185,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                             const SizedBox(height: 12),
                             // 红色线条装饰
                             Container(
-                              height: 2.5,
-                              width: 40,
+                              height: 2.5, 
+                              width: 40, 
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(10),
