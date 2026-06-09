@@ -5,7 +5,6 @@ import '../logout_page.dart';
 import 'components/profile_widgets.dart';
 import 'components/profile_cards.dart';
 import 'academic_calender_page/academic_calendar_buttons.dart';
-import 'data/profile_repository.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
