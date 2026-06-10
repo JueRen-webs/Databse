@@ -12,8 +12,33 @@ import 'profile/profile_page.dart';
 import 'splash_page.dart';
 import 'login_page.dart';
 import 'theme/app_colors.dart'; // 引入颜色库
+import 'package:flutter/material.dart';
+import 'database_helper.dart'; // 引入刚才写的 helper
+import 'dart:io';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-void main() {
+// 下面是你原有的 MyApp 代码...
+void main() async {
+  // 确保 Flutter 框架初始化
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isWindows || Platform.isLinux) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  print("============= [MyUTHM] App 开始启动 =============");
+
+  try {
+    print("[MyUTHM] 正在尝试连接并初始化本地 SQLite...");
+    // 强制唤醒数据库
+    await DatabaseHelper.instance.database;
+    print("[MyUTHM] 本地数据库初始化成功！");
+  } catch (e, stacktrace) {
+    // 如果这里有任何报错（比如外键冲突、表不存在），会立刻在这里打印出来
+    print("❌❌❌ [MyUTHM] 数据库初始化发生致命崩溃: $e");
+    print("堆栈信息: $stacktrace");
+  }
+
+  print("============= [MyUTHM] 进入 UI 渲染 =============");
   runApp(const DigitalClassroomApp());
 }
 

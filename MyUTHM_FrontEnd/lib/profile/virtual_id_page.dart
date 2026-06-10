@@ -1,24 +1,20 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// 确保引入了你的主题颜色路径
 import 'package:uthm/theme/app_colors.dart';
 
 class VirtualIdPage extends StatelessWidget {
-  const VirtualIdPage({super.key});
+  final Map<String, dynamic> userData;
+
+  const VirtualIdPage({super.key, required this.userData});
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
 
     return Scaffold(
-      // 使用 Stack 确保背景和内容层叠
       body: Stack(
         children: [
-          // ==========================================
-          // 1. 渐变背景层 (固定不动)
-          // ==========================================
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -32,8 +28,6 @@ class VirtualIdPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // 装饰光球
           Positioned(
             top: MediaQuery.of(context).size.height * 0.15,
             left: -70,
@@ -46,14 +40,9 @@ class VirtualIdPage extends StatelessWidget {
               ),
             ),
           ),
-
-          // ==========================================
-          // 2. UI 内容层
-          // ==========================================
           SafeArea(
             child: Column(
               children: [
-                // 顶部导航 (返回按钮)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
@@ -69,13 +58,10 @@ class VirtualIdPage extends StatelessWidget {
                     ],
                   ),
                 ),
-
-                // --- 核心：去除 ScrollView，让内容完全固定 ---
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
                     child: Center(
-                      // 使用 FittedBox 确保如果屏幕太小，卡片会自动缩放一点点而不会爆屏报错
                       child: FittedBox(
                         fit: BoxFit.contain,
                         child: _buildGlassIdCard(context),
@@ -83,7 +69,6 @@ class VirtualIdPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                // 底部留白，让卡片视觉上更居中
                 const SizedBox(height: 20),
               ],
             ),
@@ -93,11 +78,9 @@ class VirtualIdPage extends StatelessWidget {
     );
   }
 
-  // 构建玻璃 ID 卡片
   Widget _buildGlassIdCard(BuildContext context) {
     final colors = context.colors;
 
-    // 设定一个固定宽度，这样在 FittedBox 里效果最好
     return Container(
       width: 340,
       decoration: BoxDecoration(
@@ -124,7 +107,6 @@ class VirtualIdPage extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 顶部 Logo 与 标题
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -140,8 +122,6 @@ class VirtualIdPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 30),
-
-                // 头像区域
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -152,13 +132,13 @@ class VirtualIdPage extends StatelessWidget {
                     radius: 55,
                     backgroundColor: Colors.white.withOpacity(0.2),
                     backgroundImage: const AssetImage('assets/me.jpg'),
-                   //child: const Icon(Icons.person, size: 50, color: Colors.white30), // 备用图标
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // 核心资料
-                Text("LEE ROU", style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                Text(
+                    userData['Name']?.toString().toUpperCase() ?? 'UNKNOWN',
+                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)
+                ),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -167,13 +147,11 @@ class VirtualIdPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                      "AI230199",
+                      userData['User_ID']?.toString() ?? '-',
                       style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w800, color: colors.brandPrimary, letterSpacing: 1)
                   ),
                 ),
                 const SizedBox(height: 30),
-
-                // 详情列表
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
@@ -184,17 +162,15 @@ class VirtualIdPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildDetailRow("Faculty", "FSKTM"),
+                      _buildDetailRow("Faculty", userData['Faculty_ID']?.toString() ?? "-"),
                       const Divider(height: 20, color: Colors.black12),
-                      _buildDetailRow("Course", "Bachelor of Computer Science\n(Multimedia Computing)"),
+                      _buildDetailRow("Course", userData['Programme_Name']?.toString() ?? "-"),
                       const Divider(height: 20, color: Colors.black12),
-                      _buildDetailRow("Session Enroll", "2023/2024"),
+                      _buildDetailRow("Session Enroll", "2024/2025"),
                     ],
                   ),
                 ),
                 const SizedBox(height: 30),
-
-                // 二维码
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(

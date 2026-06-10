@@ -4,28 +4,22 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uthm/theme/app_colors.dart';
 import '../virtual_id_page.dart';
 
-// =======================================================
-//   🔥 扁平化身份信息页眉（全面引用颜色库重构版）
-// =======================================================
 class FlatIdentityHeader extends StatelessWidget {
-  const FlatIdentityHeader({super.key});
+  final Map<String, dynamic> userData;
+
+  const FlatIdentityHeader({super.key, required this.userData});
 
   @override
   Widget build(BuildContext context) {
-    // 严格从 Theme Extension 获取颜色
     final colors = context.colors;
 
     return Center(
       child: Column(
         children: [
-          // -----------------------------------------------
-          // 1. 大头像（边框、衬底全面引用颜色库）
-          // -----------------------------------------------
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              // 💡 替换：使用颜色库的面色（轻度透明）作为高光衬底
               color: colors.surface.withOpacity(0.2),
               border: Border.all(
                 color: colors.surface.withOpacity(0.5),
@@ -41,46 +35,35 @@ class FlatIdentityHeader extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 45,
-              backgroundColor: colors.borderColor, // 💡 替换：背景由颜色库驱动
+              backgroundColor: colors.borderColor,
               backgroundImage: const AssetImage('assets/me.jpg'),
-              //child: Icon(Icons.person, size: 60, color: colors.surface.withOpacity(0.3)), // 💡 替换：图标色引用颜色库
             ),
           ),
-
           const SizedBox(height: 10),
-
-          // -----------------------------------------------
-          // 2. 文本信息区域（全面引用颜色库）
-          // -----------------------------------------------
-          // 名字
           Text(
-            "LEE ROU",
+            userData['Name']?.toString().toUpperCase() ?? 'UNKNOWN',
             style: GoogleFonts.poppins(
               fontSize: 21,
               fontWeight: FontWeight.bold,
-              color: Colors.white, // 💡 替换：严格使用颜色库面色（白）
+              color: Colors.white,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 4),
-          // 学号
           Text(
-            "(Matric No: AI230199)",
+            "(Matric No: ${userData['User_ID'] ?? '-'})",
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.85), // 💡 替换：严格使用颜色库面色
+              color: Colors.white.withOpacity(0.85),
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 10),
-          // -----------------------------------------------
-          // 3. 虚拟 ID 按钮（全面引用颜色库）
-          // -----------------------------------------------
           InkWell(
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const VirtualIdPage()),
+                MaterialPageRoute(builder: (context) => VirtualIdPage(userData: userData)),
               );
             },
             borderRadius: BorderRadius.circular(20),
@@ -88,23 +71,23 @@ class FlatIdentityHeader extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: colors.surface.withOpacity(0.15), // 💡 替换：按钮底色引用颜色库
+                color: colors.surface.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: colors.surface.withOpacity(0.35), // 💡 替换：按钮边框引用颜色库
+                  color: colors.surface.withOpacity(0.35),
                   width: 1.0,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.qr_code_scanner, size: 15, color: Colors.white), // 💡 替换
+                  const Icon(Icons.qr_code_scanner, size: 15, color: Colors.white),
                   const SizedBox(width: 8),
                   Text(
                     "My Virtual ID",
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: Colors.white, // 💡 替换
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.3,
                     ),
@@ -119,9 +102,6 @@ class FlatIdentityHeader extends StatelessWidget {
   }
 }
 
-// =======================================================
-//   🔥 悬浮设置按钮（全面引用颜色库重构版）
-// =======================================================
 class SettingsButton extends StatefulWidget {
   const SettingsButton({super.key});
   @override
@@ -129,43 +109,37 @@ class SettingsButton extends StatefulWidget {
 }
 
 class _SettingsButtonState extends State<SettingsButton> {
-  bool _isPressed = false; // 改为监听按下状态，适配 Apple 缩放交互
+  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors; // 严格获取颜色库
+    final colors = context.colors;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
-      onTap: () { /* 处理设置点击 */ },
+      onTap: () {},
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150), // 缩放动画时长
-        // Apple 系统级微交互：按下时缩放至 0.95
+        duration: const Duration(milliseconds: 150),
         transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
         transformAlignment: Alignment.center,
-        padding: const EdgeInsets.all(10), // 稍微增加 padding 保证触摸面积 >= 44x44
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          // 1. 纯净的卡片面色 (白/深色)
           color: colors.surface,
-          // 2. Apple 极细边框
           border: Border.all(color: colors.borderColor, width: 0.5),
-          // 3. 严格移除 boxShadow，保持扁平化
         ),
         child: Icon(
           Icons.settings_outlined,
-          color: colors.primaryText, // 背景是卡片色，所以图标用主文本色
+          color: colors.primaryText,
           size: 24,
         ),
       ),
     );
   }
 }
-// =======================================================
-//   以下卡片组件（进度条、状态栏）原本就已严格引用颜色库，保持原样
-// =======================================================
+
 class WeekGridProgress extends StatelessWidget {
   const WeekGridProgress({super.key});
   @override
@@ -219,35 +193,33 @@ class WeekGridProgress extends StatelessWidget {
 }
 
 class StatsRowBar extends StatelessWidget {
-  const StatsRowBar({super.key});
+  final Map<String, dynamic> userData;
+
+  const StatsRowBar({super.key, required this.userData});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _buildStatItem(context, "Current\nCPA", "3.85"),
+        _buildStatItem(context, "Current\nCPA", userData['CGPA']?.toStringAsFixed(2) ?? "0.00"),
         const SizedBox(width: 12),
-        _buildStatItem(context, "Current\nGPA", "3.90"),
+        _buildStatItem(context, "Current\nCGPA", userData['CCPA']?.toStringAsFixed(2) ?? "0.00"),
         const SizedBox(width: 12),
-        _buildStatItem(context, "Obtained\nCredit", "70/122"),
+        _buildStatItem(context, "Obtained\nCredit", "${userData['Obtained_Credits'] ?? '0'}/122"),
         const SizedBox(width: 12),
-
-        // 🔥 在特定需要换行的卡片，开启 isLongText: true
-        _buildStatItem(context, "Outstanding\nDebt", "RM 30000.00"),
+        _buildStatItem(context, "Outstanding\nDebt", "RM 0.00"),
       ],
     );
   }
 
   Widget _buildStatItem(BuildContext context, String label, String value, {String? subLabel}) {
     final colors = context.colors;
-
     final bool isLongText = value.length > 6;
 
     return Expanded(
       child: AspectRatio(
         aspectRatio: 1.0,
         child: Container(
-          // 长文本时上下 padding 稍微收紧 (6)，给换行留出足够的垂直空间
           padding: EdgeInsets.symmetric(vertical: isLongText ? 12 : 12, horizontal: 4),
           decoration: BoxDecoration(
             color: colors.surface,
@@ -257,7 +229,6 @@ class StatsRowBar extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 1. 顶部的两行标签
               Text(
                 label,
                 style: GoogleFonts.poppins(
@@ -269,32 +240,23 @@ class StatsRowBar extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
               ),
-
-              // 💡 智能间距：长文本换行时调紧间距 (2)，短文本单行时放开间距 (6)
               SizedBox(height: isLongText ? 2 : 6),
-
-              // 2. 核心动态数据区域 (彻底移除 FittedBox，改用智能原生换行)
               Expanded(
                 child: Center(
                   child: Text(
                     value,
                     style: GoogleFonts.poppins(
-                      // 💡 奇迹发生在这里：
-                      // 如果是长文本，用 13 号字配合紧凑行高，确保能换行排开且不溢出
-                      // 如果是短文本，直接拉满 16 号大字，保证霸气居中
                       fontSize: isLongText ? 13 : 16,
                       height: isLongText ? 1.1 : null,
                       fontWeight: FontWeight.bold,
                       color: colors.primaryText,
                     ),
                     textAlign: TextAlign.center,
-                    // 💡 智能行数：短文本锁死 1 行，长文本允许 2 行自然折行
                     maxLines: isLongText ? 2 : 1,
-                    overflow: TextOverflow.ellipsis, // 万一超过2行才显示省略号
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-
               if (subLabel != null) ...[
                 const SizedBox(height: 2),
                 Text(

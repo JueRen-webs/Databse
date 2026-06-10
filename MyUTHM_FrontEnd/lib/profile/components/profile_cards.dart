@@ -4,12 +4,14 @@ import 'package:uthm/theme/app_colors.dart';
 import 'profile_helpers.dart';
 
 class StudentDetailsCard extends StatelessWidget {
-  const StudentDetailsCard({super.key});
+  final Map<String, dynamic> userData;
+
+  const StudentDetailsCard({super.key, required this.userData});
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
-      // Apple 规范：降低密度，加大内边距到 24
       padding: const EdgeInsets.all(24),
       decoration: ProfileHelpers.buildCardDecoration(context),
       child: Column(
@@ -17,13 +19,13 @@ class StudentDetailsCard extends StatelessWidget {
         children: [
           Text("Student Details", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: colors.primaryText)),
           const SizedBox(height: 16),
-          ProfileHelpers.buildInfoRow(context, Icons.domain, "Faculty", "FSKTM", onTap: () => ProfileHelpers.launchURL("https://fsktm.uthm.edu.my/")),
+          ProfileHelpers.buildInfoRow(context, Icons.domain, "Faculty", userData['Faculty_ID']?.toString() ?? "-", onTap: () => ProfileHelpers.launchURL("https://fsktm.uthm.edu.my/")),
           Divider(height: 30, color: colors.borderColor, thickness: 0.5),
-          ProfileHelpers.buildInfoRow(context, Icons.school, "Course", "Bachelor of Computer Science\n(Multimedia Computing)"),
+          ProfileHelpers.buildInfoRow(context, Icons.school, "Course", userData['Programme_Name']?.toString() ?? "-"),
           Divider(height: 30, color: colors.borderColor, thickness: 0.5),
-          ProfileHelpers.buildInfoRow(context, Icons.email_outlined, "Email", "ai248888@student.uthm.edu.my"),
+          ProfileHelpers.buildInfoRow(context, Icons.email_outlined, "Email", userData['Email']?.toString() ?? "-"),
           Divider(height: 30, color: colors.borderColor, thickness: 0.5),
-          ProfileHelpers.buildInfoRow(context, Icons.phone_iphone, "Phone", "+60 12-345 6789"),
+          ProfileHelpers.buildInfoRow(context, Icons.phone_iphone, "Phone", userData['Phone']?.toString() ?? "-"),
         ],
       ),
     );
@@ -40,10 +42,10 @@ class NextOfKinCard extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8), // 加大水平留白
+          tilePadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           leading: Icon(Icons.group_outlined, color: colors.brandPrimary, size: 28),
           title: Text("Guardian Details", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: colors.primaryText)),
-          childrenPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24), // 加大内部留白
+          childrenPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           children: [
             Divider(height: 1, color: colors.borderColor, thickness: 0.5),
             const SizedBox(height: 20),
