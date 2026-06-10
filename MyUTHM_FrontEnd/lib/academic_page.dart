@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'academic_class.dart';
+import 'database_helper.dart'; // 引入你的 DatabaseHelper 单例
 
 const Color kPrimaryBlue = Color(0xFF0422A7);
 const Color kAccentBlue = Color(0xFF006BFF);
@@ -8,7 +9,8 @@ const Color kBackgroundColor = Color(0xFFF5F8FE);
 const Color kTextDark = Color(0xFF071A52);
 
 class AcademicPage extends StatefulWidget {
-  const AcademicPage({super.key});
+  final String studentId;
+  const AcademicPage({super.key, this.studentId = "AI240166"});
 
   @override
   State<AcademicPage> createState() => _AcademicPageState();
@@ -16,192 +18,191 @@ class AcademicPage extends StatefulWidget {
 
 class _AcademicPageState extends State<AcademicPage> {
   late PageController _semesterController;
-  int _currentSemesterIndex = 3;
+  int _currentSemesterIndex = 0;
+  bool _isLoading = true;
 
-  final List<Map<String, String>> _semesters = [
-    {
-      "title": "Semester 1",
-      "status": "Past Semester",
-      "cpa": "3.96",
-      "classes": "5",
-      "credits": "20",
-    },
-    {
-      "title": "Semester 2",
-      "status": "Past Semester",
-      "cpa": "3.97",
-      "classes": "5",
-      "credits": "19",
-    },
-    {
-      "title": "Semester 3",
-      "status": "Past Semester",
-      "cpa": "3.98",
-      "classes": "5",
-      "credits": "20",
-    },
-    {
-      "title": "Semester 4",
-      "status": "Current Semester",
-      "cpa": "3.98",
-      "classes": "4",
-      "credits": "20",
-    },
-    {
-      "title": "Semester 5",
-      "status": "Next Semester",
-      "cpa": "-",
-      "classes": "-",
-      "credits": "-",
-    },
-  ];
-
-  final List<List<Map<String, dynamic>>> _coursesBySemester = [
-    [
-      {
-        "code": "BIC10204",
-        "name": "Algorithm",
-        "lecturer": "Malik",
-        "grade": "A",
-        "attendance": "100%",
-      },
-      {
-        "code": "BIC10503",
-        "name": "Computer Architecture",
-          "lecturer": "Sapiee",
-        "grade": "A",
-        "attendance": "99%",
-      },
-      {
-        "code": "BIC21102",
-        "name": "Professional Ethics And Occupational",
-        "lecturer": "Ezak",
-        "grade": "A-",
-        "attendance": "97%",
-      },
-      {
-        "code": "UHB13102",
-        "name": "English For General Communication",
-        "lecturer": "Liza",
-        "grade": "A",
-        "attendance": "98%",
-      },
-      {
-        "code": "UQB10102",
-        "name": "Integrity And Anti-Corruption",
-        "lecturer": "Khairol",
-        "grade": "A+",
-        "attendance": "100%",
-      },
-    ],
-    [
-      {
-        "code": "BIC10404",
-        "name": "Data Structure",
-        "lecturer": "Nordiana",
-        "grade": "A",
-        "attendance": "100%",
-      },
-      {
-        "code": "UQI11202",
-        "name": "Philosophy and Current Issues",
-        "lecturer": "Kamal",
-        "grade": "A+",
-        "attendance": "99%",
-      },
-      {
-        "code": "BIC21003",
-        "name": "System Analysis and Design",
-        "lecturer": "Faradila",
-        "grade": "A",
-        "attendance": "98%",
-      },
-      {
-        "code": "BIS10103",
-        "name": "Information Security Fundamentals",
-        "lecturer": "Bakiah",
-        "grade": "A-",
-        "attendance": "97%",
-      },
-      {
-        "code": "BIC31502",
-        "name": "Creativity and Innovation ",
-        "lecturer": "Suhaila",
-        "grade": "A",
-        "attendance": "100%",
-      },
-    ],
-    [
-      {
-        "code": "BIC20803",
-        "name": "Operating System",
-        "lecturer": "Nayef",
-        "grade": "A+",
-        "attendance": "100%",
-      },
-      {
-        "code": "BIC20904",
-        "name": "Object-Oriented Programing",
-        "lecturer": "Faradila",
-        "grade": "A",
-        "attendance": "98%",
-      },
-      {
-        "code": "BIM30503",
-        "name": "Human Computer Interaction",
-        "lecturer": "Hana",
-        "grade": "A+",
-        "attendance": "100%",
-      },
-      {
-        "code": "BIS20503",
-        "name": "Software Security",
-        "lecturer": "Hidayah",
-        "grade": "A",
-        "attendance": "99%",
-      },
-    ],
-    [
-      {
-        "code": "BIC21303",
-        "name": "Computer Networking",
-        "lecturer": "Rahmi",
-        "grade": "-",
-        "attendance": "100%",
-      },
-      {
-        "code": "BIC21404",
-        "name": "Database",
-        "lecturer": "Zana",
-        "grade": "-",
-        "attendance": "98%",
-      },
-      {
-        "code": "BIS20404",
-        "name": "Cryptography",
-        "lecturer": "Ziadah",
-        "grade": "-",
-        "attendance": "100%",
-      },
-      {
-        "code": "BIS20503",
-        "name": "Computer Crime And Digital Forensics",
-        "lecturer": "Azma",
-        "grade": "-",
-        "attendance": "99%",
-      },
-    ],
-    [],
-  ];
+  List<Map<String, String>> _semesters = [];
+  List<List<Map<String, dynamic>>> _coursesBySemester = [];
 
   @override
   void initState() {
     super.initState();
     _semesterController = PageController(
       viewportFraction: 0.78,
-      initialPage: _currentSemesterIndex,
+      initialPage: 0,
     );
     _semesterController.addListener(_handleSemesterScroll);
+    _loadDataFromDatabase();
+  }
+
+  // 根据分数百分比判定字母等级
+  String _convertToLetterGrade(dynamic gradeValue) {
+    if (gradeValue == null) return "-";
+
+    double? marks = double.tryParse(gradeValue.toString());
+    if (marks == null) return "-";
+
+    if (marks >= 80) return 'A';
+    if (marks >= 75) return 'A-';
+    if (marks >= 70) return 'B+';
+    if (marks >= 65) return 'B';
+    if (marks >= 60) return 'B-';
+    if (marks >= 55) return 'C+';
+    if (marks >= 50) return 'C';
+    return 'F';
+  }
+
+  // 根据分数百分比转换单科绩点 (Grade Point) 用作 CPA 计算
+  double _convertToGradePoint(dynamic gradeValue) {
+    if (gradeValue == null) return -1.0;
+
+    double? marks = double.tryParse(gradeValue.toString());
+    if (marks == null) return -1.0;
+
+    if (marks >= 80) return 4.00;
+    if (marks >= 75) return 3.67;
+    if (marks >= 70) return 3.33;
+    if (marks >= 65) return 3.00;
+    if (marks >= 60) return 2.67;
+    if (marks >= 55) return 2.33;
+    if (marks >= 50) return 2.00;
+    return 0.00;
+  }
+
+  Future<void> _loadDataFromDatabase() async {
+    try {
+      final db = await DatabaseHelper.instance.database;
+
+      // ✅ 绝不硬编码：优先提取全局会话的用户ID，若为空才回退到初始化备用ID
+      String currentStudentId = DatabaseHelper.currentUserId.isNotEmpty
+          ? DatabaseHelper.currentUserId
+          : widget.studentId;
+
+      // ✅ 身份安全校验：检查 Users 表中当前用户是否为 Student
+      final List<Map<String, dynamic>> userCheck = await db.rawQuery(
+          'SELECT Role FROM Users WHERE User_ID = ?',
+          [currentStudentId]
+      );
+
+      if (userCheck.isEmpty || userCheck.first['Role'] != 'Student') {
+        debugPrint("Access Denied: User role is not Student.");
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _semesters = [];
+            _coursesBySemester = [];
+          });
+        }
+        return; // 如果不是学生身份，强行终止数据读取，保护系统隐私安全性
+      }
+
+      final List<Map<String, dynamic>> result = await db.rawQuery('''
+        SELECT 
+            s.Academic_Session,
+            s.Semester,
+            c.Course_ID,
+            c.Course_Name,
+            c.Course_Credits,
+            r.Final_Grade,
+            u_lec.Name AS Lecturer_Name
+        FROM Courses_Enrollments ce
+        JOIN Sections s ON ce.Section_ID = s.Section_ID
+        JOIN Courses c ON s.Course_ID = c.Course_ID
+        LEFT JOIN Users u_lec ON s.Lecturer_ID = u_lec.User_ID
+        LEFT JOIN Results r ON ce.Course_Enrollment_ID = r.Course_Enrollment_ID
+        WHERE ce.Student_ID = ?
+        ORDER BY s.Academic_Session ASC, s.Semester ASC
+      ''', [currentStudentId]);
+
+      Map<String, List<Map<String, dynamic>>> groupedData = {};
+
+      for (var row in result) {
+        String groupKey = "${row['Academic_Session']} S${row['Semester']}";
+
+        if (!groupedData.containsKey(groupKey)) {
+          groupedData[groupKey] = [];
+        }
+
+        groupedData[groupKey]!.add({
+          "code": row['Course_ID']?.toString() ?? "N/A",
+          "name": row['Course_Name']?.toString() ?? "Unknown",
+          "lecturer": row['Lecturer_Name']?.toString() ?? "TBA",
+          "grade": _convertToLetterGrade(row['Final_Grade']),
+          "attendance": "100%",
+          "credits": int.tryParse(row['Course_Credits']?.toString() ?? "0") ?? 0,
+          "raw_grade": row['Final_Grade'],
+        });
+      }
+
+      List<Map<String, String>> tempSemesters = [];
+      List<List<Map<String, dynamic>>> tempCourses = [];
+
+      int index = 1;
+      groupedData.forEach((key, coursesList) {
+        bool isCurrent = coursesList.any((c) => c['grade'] == "-");
+
+        int totalCredits = 0;
+        int gradedCredits = 0;
+        double totalQualityPoints = 0.0;
+
+        for (var course in coursesList) {
+          int credits = course['credits'] as int;
+          totalCredits += credits;
+
+          double gp = _convertToGradePoint(course['raw_grade']);
+          if (gp >= 0) {
+            gradedCredits += credits;
+            totalQualityPoints += (gp * credits);
+          }
+        }
+
+        String cpaString = "-";
+        if (gradedCredits > 0) {
+          cpaString = (totalQualityPoints / gradedCredits).toStringAsFixed(2);
+        }
+
+        tempSemesters.add({
+          "title": "Semester $index",
+          "status": isCurrent ? "Current Semester" : "Past Semester",
+          "cpa": cpaString,
+          "classes": coursesList.length.toString(),
+          "credits": totalCredits.toString(),
+        });
+        tempCourses.add(coursesList);
+        index++;
+      });
+
+      if (tempSemesters.isEmpty) {
+        tempSemesters.add({
+          "title": "Semester 1",
+          "status": "Current Semester",
+          "cpa": "-",
+          "classes": "0",
+          "credits": "0",
+        });
+        tempCourses.add([]);
+      }
+
+      if (mounted) {
+        setState(() {
+          _semesters = tempSemesters;
+          _coursesBySemester = tempCourses;
+          _currentSemesterIndex = _semesters.length - 1;
+          _isLoading = false;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_semesterController.hasClients && _semesters.isNotEmpty) {
+            _semesterController.jumpToPage(_currentSemesterIndex);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Database Load Error: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -212,14 +213,11 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   void _handleSemesterScroll() {
-    if (!_semesterController.hasClients ||
-        !_semesterController.position.haveDimensions) {
-      return;
-    }
+    if (!_semesterController.hasClients || !_semesterController.position.haveDimensions) return;
+    if (_semesters.isEmpty) return;
 
-    final nextIndex = (_semesterController.page ?? _currentSemesterIndex)
-        .round()
-        .clamp(0, _semesters.length - 1);
+    int maxBound = _semesters.isEmpty ? 0 : _semesters.length - 1;
+    final nextIndex = (_semesterController.page ?? _currentSemesterIndex).round().clamp(0, maxBound);
 
     if (nextIndex != _currentSemesterIndex) {
       setState(() {
@@ -244,19 +242,23 @@ class _AcademicPageState extends State<AcademicPage> {
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.w600,
-            fontSize: 18,
+            fontSize: 22,
           ),
         ),
       ),
-      body: _buildBody(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: kPrimaryBlue))
+          : _buildBody(),
     );
   }
 
   Widget _buildBody() {
-    final currentCourses = _coursesBySemester[_currentSemesterIndex];
+    final currentCourses = (_currentSemesterIndex >= 0 && _currentSemesterIndex < _coursesBySemester.length)
+        ? _coursesBySemester[_currentSemesterIndex]
+        : [];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 18, bottom: 24),
+      padding: const EdgeInsets.only(top: 10, bottom: 48),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -300,8 +302,9 @@ class _AcademicPageState extends State<AcademicPage> {
 
   Widget _buildSemesterCarousel() {
     return SizedBox(
-      height: 300,
+      height: 310,
       child: PageView.builder(
+        clipBehavior: Clip.none,
         controller: _semesterController,
         physics: const BouncingScrollPhysics(),
         itemCount: _semesters.length,
@@ -318,7 +321,9 @@ class _AcademicPageState extends State<AcademicPage> {
               if (_semesterController.position.haveDimensions) {
                 final page = _semesterController.page ?? _currentSemesterIndex;
                 scale = (1 - ((page - index).abs() * 0.05)).clamp(0.94, 1.0);
-                selectedIndex = page.round().clamp(0, _semesters.length - 1);
+
+                int maxBound = _semesters.isEmpty ? 0 : _semesters.length - 1;
+                selectedIndex = page.round().clamp(0, maxBound);
               }
 
               return Transform.scale(
@@ -336,17 +341,19 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _buildSemesterCard(
-    Map<String, String> semester, {
-    required bool isSelected,
-  }) {
+      Map<String, String> semester, {
+        required bool isSelected,
+      }) {
     final bool isCurrent = semester["status"] == "Current Semester";
 
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 10,
+      margin: const EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 10,
+        bottom: 24,
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -356,7 +363,7 @@ class _AcademicPageState extends State<AcademicPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -394,7 +401,7 @@ class _AcademicPageState extends State<AcademicPage> {
                 ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Text(
             semester["title"]!,
             style: GoogleFonts.poppins(
@@ -403,11 +410,12 @@ class _AcademicPageState extends State<AcademicPage> {
               color: kPrimaryBlue,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          // ✅ 修改点 1：根据学期是否结束，动态切换顶部的励志寄语
           Text(
-            "Keep going, you're doing great!✨ ",
+            isCurrent ? "Keep going, you're doing great!✨ " : "You Have Done Well, Good Job!",
             style: GoogleFonts.poppins(
-              fontSize: 15,
+              fontSize: 14,
               color: const Color(0xFF46537A),
             ),
           ),
@@ -415,7 +423,7 @@ class _AcademicPageState extends State<AcademicPage> {
           Divider(
             color: Colors.grey.shade300,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -492,8 +500,8 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _buildCourseCard(
-    Map<String, dynamic> course,
-  ) {
+      Map<String, dynamic> course,
+      ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -502,7 +510,7 @@ class _AcademicPageState extends State<AcademicPage> {
             builder: (_) => AcademicClassPage(
               courseData: Map<String, String>.from(
                 course.map(
-                  (key, value) => MapEntry(key, value.toString()),
+                      (key, value) => MapEntry(key, value.toString()),
                 ),
               ),
             ),
@@ -526,6 +534,7 @@ class _AcademicPageState extends State<AcademicPage> {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center, // 确保横向所有块在同一中心线上
           children: [
             Expanded(
               flex: 5,
@@ -551,14 +560,17 @@ class _AcademicPageState extends State<AcademicPage> {
                 ],
               ),
             ),
+            // ✅ 修改点 2：将 Attendance 设为 flex: 2，文字大小对齐
             Expanded(
               flex: 2,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     "Attendance",
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: const Color(0xFF7A859F),
                     ),
                   ),
@@ -582,13 +594,18 @@ class _AcademicPageState extends State<AcademicPage> {
               ),
               color: Colors.grey.shade300,
             ),
+            // ✅ 修改点 3：将 Grade 同样设为 flex: 2，数值设为 fontSize: 16。
+            // 此时 Attendance 与 Grade 的容器高宽比例、文字行数与基准线一模一样，完美保持绝对等高对称！
             Expanded(
+              flex: 2,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     "Grade",
                     style: GoogleFonts.poppins(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: const Color(0xFF7A859F),
                     ),
                   ),
@@ -598,7 +615,7 @@ class _AcademicPageState extends State<AcademicPage> {
                     style: GoogleFonts.poppins(
                       color: kPrimaryBlue,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -611,9 +628,9 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _simpleInfo(
-    String title,
-    String value,
-  ) {
+      String title,
+      String value,
+      ) {
     return Column(
       children: [
         Text(
