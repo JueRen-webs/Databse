@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'constants.dart';
 
-// ==========================================
-// Hostel 入口菜单
-// ==========================================
+
+
+
 
 void showHostelMenu(BuildContext context) {
   showModalBottomSheet(
@@ -79,9 +79,9 @@ void showHostelMenu(BuildContext context) {
   );
 }
 
-// ==========================================
-// 1. Hostel Registration Form
-// ==========================================
+
+
+
 
 class HostelRegistrationFormPage extends StatefulWidget {
   const HostelRegistrationFormPage({super.key});

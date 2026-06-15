@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// ==========================================================
-// 紧急联系人页面 & 模拟通话页面
-// ==========================================================
+
+
+
 
 class EmergencyContactsPage extends StatelessWidget {
   const EmergencyContactsPage({super.key});
@@ -109,7 +109,7 @@ class EmergencyContactsPage extends StatelessWidget {
   }
 }
 
-// 模拟通话页面
+
 class MockCallingPage extends StatelessWidget {
   final String name;
   final String number;

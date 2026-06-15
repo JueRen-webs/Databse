@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'academic_class.dart';
-import 'database_helper.dart'; // 引入你的 DatabaseHelper 单例
+import 'academic/academic_class_page.dart';
+import 'database_helper.dart';
 
 const Color kPrimaryBlue = Color(0xFF0422A7);
 const Color kAccentBlue = Color(0xFF006BFF);
@@ -10,7 +10,7 @@ const Color kTextDark = Color(0xFF071A52);
 
 class AcademicPage extends StatefulWidget {
   final String studentId;
-  // ✅ 修复 1：完成对 final 变量的初始化赋空初值。不仅消除了编译错误，还能完美兼容你其他页面带参或无参的路由跳转！
+
   const AcademicPage({super.key, this.studentId = ""});
 
   @override
@@ -36,7 +36,6 @@ class _AcademicPageState extends State<AcademicPage> {
     _loadDataFromDatabase();
   }
 
-  // 根据分数百分比判定字母等级
   String _convertToLetterGrade(dynamic gradeValue) {
     if (gradeValue == null) return "-";
 
@@ -53,7 +52,6 @@ class _AcademicPageState extends State<AcademicPage> {
     return 'F';
   }
 
-  // 根据分数百分比转换单科绩点 (Grade Point) 用作 CPA 计算
   double _convertToGradePoint(dynamic gradeValue) {
     if (gradeValue == null) return -1.0;
 
@@ -74,7 +72,6 @@ class _AcademicPageState extends State<AcademicPage> {
     try {
       final db = await DatabaseHelper.instance.database;
 
-      // ✅ 修复 2：全面动态获取。优先读取你登录成功后写入单例的全局当前用户 ID
       String currentStudentId = DatabaseHelper.currentUserId.isNotEmpty
           ? DatabaseHelper.currentUserId
           : widget.studentId;
@@ -85,11 +82,11 @@ class _AcademicPageState extends State<AcademicPage> {
         return;
       }
 
-      // ✅ 身份校验安全线：去 Users 表里检查当前登录账号的角色是不是 Student
+      await DatabaseHelper.instance.ensureAttendanceTablesForApp();
+      await DatabaseHelper.instance.ensureAssessmentTablesForApp();
+
       final List<Map<String, dynamic>> userCheck = await db.rawQuery(
-          'SELECT Role FROM Users WHERE User_ID = ?',
-          [currentStudentId]
-      );
+          'SELECT Role FROM Users WHERE User_ID = ?', [currentStudentId]);
 
       if (userCheck.isEmpty || userCheck.first['Role'] != 'Student') {
         debugPrint("Access Denied: User role is not Student.");
@@ -104,19 +101,59 @@ class _AcademicPageState extends State<AcademicPage> {
       }
 
       final List<Map<String, dynamic>> result = await db.rawQuery('''
-        SELECT 
+        SELECT
             s.Academic_Session,
             s.Semester,
+            s.Section_ID,
             c.Course_ID,
             c.Course_Name,
             c.Course_Credits,
-            r.Final_Grade,
-            u_lec.Name AS Lecturer_Name
+            COALESCE(calc.Calculated_Grade, r.Final_Grade) AS Final_Grade,
+            u_lec.Name AS Lecturer_Name,
+            CASE
+              WHEN COALESCE(att.Total_Sessions, 0) = 0 THEN 0
+              ELSE ROUND((att.Present_Count * 100.0) / att.Total_Sessions)
+            END AS Attendance_Percent
         FROM Courses_Enrollments ce
         JOIN Sections s ON ce.Section_ID = s.Section_ID
         JOIN Courses c ON s.Course_ID = c.Course_ID
         LEFT JOIN Users u_lec ON s.Lecturer_ID = u_lec.User_ID
         LEFT JOIN Results r ON ce.Course_Enrollment_ID = r.Course_Enrollment_ID
+        LEFT JOIN (
+          SELECT
+            ce2.Student_ID,
+            ce2.Section_ID,
+            SUM(
+              CASE
+                WHEN ac.max_marks > 0
+                THEN (COALESCE(ae.Marks, 0) * 1.0 / ac.max_marks) * ac.weightage
+                ELSE 0
+              END
+            ) AS Calculated_Grade,
+            SUM(COALESCE(ae.Marks, 0)) AS Total_Marks
+          FROM Courses_Enrollments ce2
+          JOIN Assessments a ON a.Section_ID = ce2.Section_ID
+          LEFT JOIN Assessment_Schedules acs ON acs.Assessment_ID = a.Assessment_ID
+          JOIN Assessment_Components ac ON ac.component_id = a.Component_ID
+          LEFT JOIN Assessment_Enrollments ae
+            ON ae.Assessment_ID = a.Assessment_ID
+           AND ae.Student_ID = ce2.Student_ID
+          WHERE acs.Schedule_ID IS NULL
+          GROUP BY ce2.Student_ID, ce2.Section_ID
+          HAVING Total_Marks > 0
+        ) calc ON calc.Section_ID = s.Section_ID
+              AND calc.Student_ID = ce.Student_ID
+        LEFT JOIN (
+          SELECT
+            ss.Section_ID,
+            ca.Student_ID,
+            COUNT(ca.Attendance_ID) AS Total_Sessions,
+            SUM(CASE WHEN ca.Attendance_Status = 'Present' THEN 1 ELSE 0 END) AS Present_Count
+          FROM Course_Attendances ca
+          JOIN Attendance_Sessions ats ON ca.Session_ID = ats.Session_ID
+          JOIN Section_Schedules ss ON ats.Schedule_ID = ss.Schedule_ID
+          GROUP BY ss.Section_ID, ca.Student_ID
+        ) att ON att.Section_ID = s.Section_ID AND att.Student_ID = ce.Student_ID
         WHERE ce.Student_ID = ?
         ORDER BY s.Academic_Session ASC, s.Semester ASC
       ''', [currentStudentId]);
@@ -132,11 +169,13 @@ class _AcademicPageState extends State<AcademicPage> {
 
         groupedData[groupKey]!.add({
           "code": row['Course_ID']?.toString() ?? "N/A",
+          "section_id": row['Section_ID']?.toString() ?? "",
           "name": row['Course_Name']?.toString() ?? "Unknown",
           "lecturer": row['Lecturer_Name']?.toString() ?? "TBA",
           "grade": _convertToLetterGrade(row['Final_Grade']),
-          "attendance": "100%",
-          "credits": int.tryParse(row['Course_Credits']?.toString() ?? "0") ?? 0,
+          "attendance": "${row['Attendance_Percent']?.toString() ?? '0'}%",
+          "credits":
+              int.tryParse(row['Course_Credits']?.toString() ?? "0") ?? 0,
           "raw_grade": row['Final_Grade'],
         });
       }
@@ -220,11 +259,18 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   void _handleSemesterScroll() {
-    if (!_semesterController.hasClients || !_semesterController.position.haveDimensions) return;
-    if (_semesters.isEmpty) return;
+    if (!_semesterController.hasClients ||
+        !_semesterController.position.haveDimensions) {
+      return;
+    }
+    if (_semesters.isEmpty) {
+      return;
+    }
 
     int maxBound = _semesters.isEmpty ? 0 : _semesters.length - 1;
-    final nextIndex = (_semesterController.page ?? _currentSemesterIndex).round().clamp(0, maxBound);
+    final nextIndex = (_semesterController.page ?? _currentSemesterIndex)
+        .round()
+        .clamp(0, maxBound);
 
     if (nextIndex != _currentSemesterIndex) {
       setState(() {
@@ -260,7 +306,8 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _buildBody() {
-    final currentCourses = (_currentSemesterIndex >= 0 && _currentSemesterIndex < _coursesBySemester.length)
+    final currentCourses = (_currentSemesterIndex >= 0 &&
+            _currentSemesterIndex < _coursesBySemester.length)
         ? _coursesBySemester[_currentSemesterIndex]
         : [];
 
@@ -348,9 +395,9 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _buildSemesterCard(
-      Map<String, String> semester, {
-        required bool isSelected,
-      }) {
+    Map<String, String> semester, {
+    required bool isSelected,
+  }) {
     final bool isCurrent = semester["status"] == "Current Semester";
 
     return Container(
@@ -418,9 +465,10 @@ class _AcademicPageState extends State<AcademicPage> {
             ),
           ),
           const SizedBox(height: 6),
-          // ✅ 动态标语：已经过了的学期自动替换为你指定的赞美文本
           Text(
-            isCurrent ? "Keep going, you're doing great!✨ " : "You Have Done Well, Good Job!",
+            isCurrent
+                ? "Keep going, you're doing great!✨ "
+                : "You Have Done Well, Good Job!",
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: const Color(0xFF46537A),
@@ -506,19 +554,16 @@ class _AcademicPageState extends State<AcademicPage> {
     );
   }
 
-  Widget _buildCourseCard(
-      Map<String, dynamic> course,
-      ) {
+  Widget _buildCourseCard(Map<String, dynamic> course) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => AcademicClassPage(
+              isLecturer: false,
               courseData: Map<String, String>.from(
-                course.map(
-                      (key, value) => MapEntry(key, value.toString()),
-                ),
+                course.map((key, value) => MapEntry(key, value.toString())),
               ),
             ),
           ),
@@ -541,7 +586,7 @@ class _AcademicPageState extends State<AcademicPage> {
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center, // 横向所有模块垂直中心线绝对对齐
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               flex: 4,
@@ -567,9 +612,6 @@ class _AcademicPageState extends State<AcademicPage> {
                 ],
               ),
             ),
-            // ✅ 视觉修复方案：移除高度硬限制，使用统一样式的 Column 容器。
-            // 当两边的字号（Header都是11，Value都是15）和结构完全镜像对称时，
-            // 它们在 CrossAxisAlignment.center 的拉伸下，天生就会在物理上完美对齐！
             Expanded(
               flex: 2,
               child: Column(
@@ -597,13 +639,12 @@ class _AcademicPageState extends State<AcademicPage> {
             ),
             Container(
               width: 1,
-              height: 38, // 柔和的垂直分割线高度
+              height: 38,
               margin: const EdgeInsets.symmetric(
                 horizontal: 16,
               ),
               color: Colors.grey.shade300,
             ),
-            // ✅ 镜像对称：Grade 列与 Attendance 列使用 100% 相同的数据布局和尺寸缩放
             Expanded(
               flex: 2,
               child: Column(
@@ -636,9 +677,9 @@ class _AcademicPageState extends State<AcademicPage> {
   }
 
   Widget _simpleInfo(
-      String title,
-      String value,
-      ) {
+    String title,
+    String value,
+  ) {
     return Column(
       children: [
         Text(

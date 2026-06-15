@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'constants.dart';
 
-// ==========================================
-// C. Complaint
-// ==========================================
+
+
+
 
 class ComplaintPage extends StatefulWidget {
   const ComplaintPage({super.key});
@@ -174,9 +174,9 @@ class _ComplaintPageState extends State<ComplaintPage> {
   }
 }
 
-// ==========================================
-// NewComplaintPage
-// ==========================================
+
+
+
 
 class NewComplaintPage extends StatefulWidget {
   const NewComplaintPage({super.key});
@@ -275,9 +275,9 @@ class _NewComplaintPageState extends State<NewComplaintPage> {
   }
 }
 
-// ==========================================
-// ComplaintDetailPage
-// ==========================================
+
+
+
 
 class ComplaintDetailPage extends StatelessWidget {
   const ComplaintDetailPage({super.key});

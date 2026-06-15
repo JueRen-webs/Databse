@@ -3,16 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
+import 'academic/academic_class_page.dart';
+import 'database_helper.dart';
 import 'main.dart';
 
-// Color Constants
+
 const Color kPrimaryBlue = Color(0xFF0422A7);
 const Color kBackgroundColor = Color(0xFFF4F6FC);
 const Color kBorderColor = Color(0xFFEEEEEE);
 const Color kHeaderColor = Color(0xFF001C55);
 
 class ScanPage extends StatefulWidget {
-  const ScanPage({super.key});
+  const ScanPage({super.key, this.onClose});
+
+  final VoidCallback? onClose;
 
   @override
   State<ScanPage> createState() => _ScanPageState();
@@ -20,7 +24,7 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   final TextEditingController _codeController = TextEditingController();
-  final int _bottomNavIndex = 2; // FAB index
+  final int _bottomNavIndex = 2;
 
   bool _isSubmitted = false;
 
@@ -99,11 +103,54 @@ class _ScanPageState extends State<ScanPage> {
     },
   ];
 
-  void _handleSubmit() {
-    if (_codeController.text.isNotEmpty) {
-      setState(() {
-        _isSubmitted = true;
-      });
+  Future<void> _handleSubmit() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) return;
+
+    final result = await DatabaseHelper.instance.markAttendanceByCode(
+      code: code,
+      studentId: DatabaseHelper.currentUserId,
+    );
+    if (!mounted) return;
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Invalid attendance code.'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 112),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final courseData = await DatabaseHelper.instance.getCourseDataBySectionId(
+      result['Section_ID'].toString(),
+    );
+    if (!mounted || courseData == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AcademicClassPage(
+          courseData: courseData,
+          isLecturer: false,
+          initialTab: 'Attendance',
+        ),
+      ),
+    );
+  }
+
+  void _closeScan() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+      return;
+    }
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      mainGlobalKey.currentState?.switchToTab(1);
     }
   }
 
@@ -124,20 +171,6 @@ class _ScanPageState extends State<ScanPage> {
             fontSize: 18,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: _isSubmitted ? Colors.white : Colors.black87),
-          onPressed: () {
-            if (_isSubmitted) {
-              setState(() {
-                _isSubmitted = false;
-                _codeController.clear();
-              });
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
       ),
       body: _isSubmitted ? _buildResultView() : _buildScanView(),
       floatingActionButton: SizedBox(
@@ -145,22 +178,12 @@ class _ScanPageState extends State<ScanPage> {
         height: 75,
         child: FloatingActionButton(
           onPressed: () {
-            if (_isSubmitted) {
-              setState(() {
-                _isSubmitted = false;
-                _codeController.clear();
-              });
-            }
+            _closeScan();
           },
           backgroundColor: kPrimaryBlue,
           shape: const CircleBorder(),
           elevation: 4,
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.qr_code_scanner, color: Colors.white, size: 32),
-            ],
-          ),
+          child: const Icon(Icons.close, color: Colors.white, size: 34),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -184,7 +207,7 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 
-  // --- View 1: Scanning View ---
+
   Widget _buildScanView() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -235,12 +258,14 @@ class _ScanPageState extends State<ScanPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: TextField(
                     controller: _codeController,
-                    keyboardType: TextInputType.number,
-                    // --- Added: Action button on keyboard to "Done" ---
+                    keyboardType: TextInputType.text,
+
                     textInputAction: TextInputAction.done,
-                    // --- Added: Logic to submit when Enter/Done is pressed ---
+
                     onSubmitted: (_) => _handleSubmit(),
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
+                    ],
                     decoration: InputDecoration(
                       hintText: "Attendance Code",
                       hintStyle:
@@ -279,7 +304,7 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 
-  // --- View 2: Result View (Full Scrollable Page) ---
+
   Widget _buildResultView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 80),
@@ -322,7 +347,7 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 
-  // --- Helper Widgets ---
+
   Widget _buildSectionHeader(String title) {
     return Container(
       width: double.infinity,
@@ -477,25 +502,25 @@ class _ScanPageState extends State<ScanPage> {
     );
   }
 
-  // --- Fixed Navigation Logic ---
+
   Widget _buildNavItem(IconData icon, String label, int index) {
     bool isSelected = _bottomNavIndex == index;
     Color color = isSelected ? kPrimaryBlue : Colors.grey;
 
     return InkWell(
       onTap: () {
-        // Close the ScanPage and go to the target tab in Main
+
         if (index == 0) {
-          mainGlobalKey.currentState?.switchToTab(0); // Home
+          mainGlobalKey.currentState?.switchToTab(0);
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (index == 1) {
-          mainGlobalKey.currentState?.switchToTab(1); // Academic
+          mainGlobalKey.currentState?.switchToTab(1);
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (index == 3) {
-          mainGlobalKey.currentState?.switchToTab(3); // Notification
+          mainGlobalKey.currentState?.switchToTab(3);
           Navigator.of(context).popUntil((route) => route.isFirst);
         } else if (index == 4) {
-          mainGlobalKey.currentState?.switchToTab(4); // Profile
+          mainGlobalKey.currentState?.switchToTab(4);
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       },

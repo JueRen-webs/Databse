@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import 'database_helper.dart';
 import 'theme/app_colors.dart';
 
 class CheckInRecord {
@@ -69,6 +70,8 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
   CheckInRecord? _todayRecord;
   late AttendanceStatusFilter _statusFilter;
   late String _typeFilter;
+  bool _loading = true;
+  Map<String, dynamic> _overview = {'worked': 0, 'late': 0, 'absent': 0};
 
   final List<CheckInRecord> _history = [
     CheckInRecord(
@@ -198,11 +201,7 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
     ),
   ];
 
-  final Map<String, Set<int>> _absentDaysByMonth = const {
-    'June 2026': {1, 9},
-    'May 2026': {22},
-    'April 2026': {24},
-  };
+  final Map<String, Set<int>> _absentDaysByMonth = {};
 
   static const List<EventAttendanceRecord> _events = [
     EventAttendanceRecord(
@@ -271,6 +270,7 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
     );
     _statusFilter = widget.initialStatus;
     _typeFilter = widget.initialType;
+    _loadAttendanceData();
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted && _todayRecord?.isOpen == true) {
         setState(() => _now = DateTime.now());
@@ -285,19 +285,65 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
     super.dispose();
   }
 
-  void _handleAttendanceAction() {
-    final current = DateTime.now();
-    setState(() {
-      _now = current;
-      if (_todayRecord == null) {
-        _todayRecord = CheckInRecord(
-          date: current,
-          checkIn: current,
-        );
-      } else if (_todayRecord!.checkOut == null) {
-        _todayRecord!.checkOut = current;
+  DateTime? _parseDateTime(String? dateText, String? timeText) {
+    if (dateText == null || timeText == null || timeText.trim().isEmpty) {
+      return null;
+    }
+    final date = DateTime.tryParse(dateText);
+    if (date == null) return null;
+    final formats = [DateFormat('HH:mm'), DateFormat('h:mm a')];
+    for (final format in formats) {
+      try {
+        final time = format.parse(timeText);
+        return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      } catch (_) {
+
       }
+    }
+    return null;
+  }
+
+  Future<void> _loadAttendanceData() async {
+    final lecturerId = DatabaseHelper.currentUserId;
+    final rows =
+        await DatabaseHelper.instance.getLecturerAttendanceRecords(lecturerId);
+    final overview =
+        await DatabaseHelper.instance.getLecturerAttendanceOverview(lecturerId);
+    final todayText = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final records = <CheckInRecord>[];
+    CheckInRecord? todayRecord;
+    for (final row in rows) {
+      final dateText = row['Attendance_Date']?.toString();
+      final inAt = _parseDateTime(dateText, row['In_Time']?.toString());
+      if (dateText == null || inAt == null) continue;
+      final outAt = _parseDateTime(dateText, row['Out_Time']?.toString());
+      final date = DateTime.tryParse(dateText) ?? inAt;
+      final record = CheckInRecord(date: date, checkIn: inAt, checkOut: outAt);
+      if (dateText == todayText) {
+        todayRecord = record;
+      } else {
+        records.add(record);
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _now = DateTime.now();
+      _todayRecord = todayRecord;
+      _history
+        ..clear()
+        ..addAll(records);
+      _overview = overview;
+      _loading = false;
     });
+  }
+
+  Future<void> _handleAttendanceAction() async {
+    final current = DateTime.now();
+    setState(() => _now = current);
+    await DatabaseHelper.instance.lecturerCheckInOut(
+      DatabaseHelper.currentUserId,
+    );
+    await _loadAttendanceData();
   }
 
   List<CheckInRecord> get _records {
@@ -311,18 +357,16 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
   }
 
   List<CheckInRecord> get _summaryRecords => _records
-      .where((record) => record.date.year == 2026 && record.date.month == 5)
+      .where(
+        (record) =>
+            record.date.year == _now.year && record.date.month == _now.month,
+      )
       .toList();
 
-  Set<int> get _summaryAbsentDays {
-    final workedDays = _summaryRecords.map((record) => record.date.day).toSet();
-    return (_absentDaysByMonth['May 2026'] ?? {})
-        .where((day) => !workedDays.contains(day))
-        .toSet();
-  }
-
-  int get _summaryDaysAbsent => _summaryAbsentDays.length;
+  int get _summaryDaysAbsent =>
+      int.tryParse(_overview['absent']?.toString() ?? '') ?? 0;
   int get _summaryDaysLate =>
+      int.tryParse(_overview['late']?.toString() ?? '') ??
       _summaryRecords.where((record) => record.isLate).length;
   String get _summaryTotalHours => _formatDuration(
         _summaryRecords.fold<Duration>(
@@ -355,13 +399,15 @@ class _LecturerAttendancePageState extends State<LecturerAttendancePage>
         children: [
           _AttendanceTabs(controller: _tabController),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildMyAttendanceTab(),
-                _buildEventAttendanceTab(),
-              ],
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildMyAttendanceTab(),
+                      _buildEventAttendanceTab(),
+                    ],
+                  ),
           ),
         ],
       ),

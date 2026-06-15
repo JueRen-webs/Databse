@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import '../database_helper.dart';
 import 'constants.dart';
 import '../theme/app_colors.dart';
 
-// ==========================================================
-// Course 数据模型
-// ==========================================================
+
+
+
 
 class Course {
   final String code;
@@ -29,9 +29,9 @@ class Course {
   });
 }
 
-// ==========================================================
-// 完整的周课表页面 (TimetablePage)
-// ==========================================================
+
+
+
 
 class TimetablePage extends StatefulWidget {
   const TimetablePage({super.key});
@@ -41,129 +41,24 @@ class TimetablePage extends StatefulWidget {
 }
 
 class _TimetablePageState extends State<TimetablePage> {
-  // ignore: unused_field
   bool _canPop = true;
+
+
+  late Future<Map<String, List<Course>>> _timetableFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _timetableFuture = DatabaseHelper.instance.getStudentTimetable(DatabaseHelper.currentUserId);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, List<Course>> weeklySchedule = {
-      'Monday': [
-        Course(
-          code: 'BIC1013',
-          name: 'STRUKTUR DISKRIT',
-          location: 'I-FSKTM-BS1',
-          startHour: 8,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-        Course(
-          code: 'BIM30503',
-          name: 'INTERAKSI MANUSIA KOMPUTER',
-          location: 'I-PERP-BT9-GS',
-          startHour: 14,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-        Course(
-          code: 'BIC20803',
-          name: 'SISTEM PENGOPERASIAN',
-          location: 'I-FSKTM-BS1',
-          startHour: 16,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-      ],
-      'Tuesday': [
-        Course(
-          code: 'BIC20904',
-          name: 'PENGATURCARAAN BERORIENTASIKAN OBJEK',
-          location: 'I-ISYS-ARAS 1',
-          startHour: 9,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-        Course(
-          code: 'BIC1013',
-          name: 'STRUKTUR DISKRIT',
-          location: 'I-PERP-BT10-GS',
-          startHour: 11,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkC,
-        ),
-        Course(
-          code: 'UHB 23103',
-          name: 'ENGLISH FOR TECHNICAL COMMUNICATION',
-          location: 'PERP-BT1',
-          startHour: 14,
-          duration: 3,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkC,
-        ),
-      ],
-      'Wednesday': [
-        Course(
-          code: 'BIS20503',
-          name: 'KESELAMATAN PERISIAN',
-          location: 'I-MKK-ARAS 2',
-          startHour: 14,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-        Course(
-          code: 'BIC20803',
-          name: 'SISTEM PENGOPERASIAN',
-          location: 'I-MSK-ARAS 3',
-          startHour: 16,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-      ],
-      'Thursday': [
-        Course(
-          code: 'BIC20904',
-          name: 'PENGATURCARAAN BERORIENTASIKAN OBJEK',
-          location: 'I-B8-T1-GS',
-          startHour: 8,
-          duration: 3,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkB,
-        ),
-        Course(
-          code: 'BIS20503',
-          name: 'KESELAMATAN PERISIAN',
-          location: 'I-PERP-BT10-GS',
-          startHour: 14,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkC,
-        ),
-      ],
-      'Friday': [
-        Course(
-          code: 'BIM30503',
-          name: 'INTERAKSI MANUSIA KOMPUTER',
-          location: 'I-MGA-ARAS 0',
-          startHour: 8,
-          duration: 2,
-          backgroundColor: Colors.white,
-          mapUrl: kMapLinkA,
-        ),
-      ],
-    };
-
     return PopScope(
       canPop: _canPop,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          return;
-        }
+        if (didPop) return;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -190,15 +85,40 @@ class _TimetablePageState extends State<TimetablePage> {
             },
           ),
         ),
-        body: StudentTimetableGrid(schedule: weeklySchedule),
+
+        body: FutureBuilder<Map<String, List<Course>>>(
+          future: _timetableFuture,
+          builder: (context, snapshot) {
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.blue),
+              );
+            }
+
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Text("Load SQLite Timetable error: ${snapshot.error}"),
+              );
+            }
+
+
+            final dynamicSchedule = snapshot.data ?? {};
+
+
+
+            return StudentTimetableGrid(schedule: dynamicSchedule);
+          },
+        ),
       ),
     );
   }
 }
 
-// ==========================================================
-// StudentTimetableGrid (styled, themed)
-// ==========================================================
+
+
+
 
 class StudentTimetableGrid extends StatelessWidget {
   const StudentTimetableGrid({super.key, required this.schedule});
@@ -498,9 +418,9 @@ class _StudentTimetableSlotCard extends StatelessWidget {
   }
 }
 
-// ==========================================================
-// TimetableGrid (legacy / alternate grid style)
-// ==========================================================
+
+
+
 
 class TimetableGrid extends StatelessWidget {
   final Map<String, List<Course>> schedule;
@@ -541,7 +461,7 @@ class TimetableGrid extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 左侧固定列 (Header: Day)
+
           Column(
             children: [
               Container(
@@ -577,14 +497,14 @@ class TimetableGrid extends StatelessWidget {
             ],
           ),
 
-          // 右侧可滚动区域
+
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 顶部时间轴
+
                   Row(
                     children: List.generate(endHour - startHour, (index) {
                       int h = startHour + index;
@@ -608,13 +528,13 @@ class TimetableGrid extends StatelessWidget {
                     }),
                   ),
 
-                  // 课程网格
+
                   SizedBox(
                     height: cellHeight * days.length,
                     width: totalGridWidth,
                     child: Stack(
                       children: [
-                        // 背景空网格
+
                         ...List.generate(days.length, (dayIndex) {
                           return Positioned(
                             top: dayIndex * cellHeight,
@@ -636,7 +556,7 @@ class TimetableGrid extends StatelessWidget {
                           );
                         }),
 
-                        // 课程卡片
+
                         ...days.asMap().entries.map((entry) {
                           int dayIndex = entry.key;
                           String dayName = entry.value;

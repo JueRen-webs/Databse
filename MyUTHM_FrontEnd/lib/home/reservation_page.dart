@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'constants.dart';
 
-// ==========================================
-// F. Reservation Page
-// ==========================================
+
+
+
 
 class ReservationPage extends StatefulWidget {
   const ReservationPage({super.key});
@@ -181,7 +181,7 @@ class _ReservationPageState extends State<ReservationPage> {
                   color: kPrimaryBlue)),
           const SizedBox(height: 20),
 
-          // Form Area
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -236,7 +236,7 @@ class _ReservationPageState extends State<ReservationPage> {
           ),
           const SizedBox(height: 24),
 
-          // Date Picker
+
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text("Select Date:",
                 style:
@@ -264,7 +264,7 @@ class _ReservationPageState extends State<ReservationPage> {
           ]),
           const SizedBox(height: 12),
 
-          // Booking Table
+
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Container(

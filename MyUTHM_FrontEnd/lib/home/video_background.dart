@@ -12,14 +12,14 @@ class VideoBackground extends StatefulWidget {
 
 class _VideoBackgroundState extends State<VideoBackground> {
   late VideoPlayerController _controller;
-  bool _isInitialized = false;
+  bool _isInitialized = true;
 
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.asset('assets/bluesky.mp4')
       ..initialize().then((_) {
-        _controller.setLooping(false);
+        _controller.setLooping(true);
         _controller.setVolume(0.0);
         _controller.play();
         setState(() {

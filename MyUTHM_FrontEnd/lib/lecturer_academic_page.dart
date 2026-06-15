@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'academic_class.dart';
+import 'academic/academic_class_page.dart';
+import 'database_helper.dart';
 
 const Color kPrimaryBlue = Color(0xFF0422A7);
 const Color kAccentBlue = Color(0xFF006BFF);
@@ -16,190 +17,121 @@ class LecturerAcademicPage extends StatefulWidget {
 }
 
 class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
-  late final PageController _semesterController;
-  late int _currentSemesterIndex;
+  PageController? _semesterController;
+  int _currentSemesterIndex = 0;
+  bool _isLoading = true;
 
-  final List<Map<String, String>> _lecturerSemesters = const [
-    {
-      "title": "2024 Sem 1",
-      "status": "Past Semester",
-      "courses": "3",
-      "students": "118",
-      "materials": "15",
-    },
-    {
-      "title": "2024 Sem 2",
-      "status": "Past Semester",
-      "courses": "4",
-      "students": "142",
-      "materials": "18",
-    },
-    {
-      "title": "2024 Sem 3",
-      "status": "Past Semester",
-      "courses": "3",
-      "students": "96",
-      "materials": "12",
-    },
-    {
-      "title": "2025 Sem 1",
-      "status": "Current Semester",
-      "courses": "4",
-      "students": "156",
-      "materials": "20",
-    },
-    {
-      "title": "2025 Sem 2",
-      "status": "Next Semester",
-      "courses": "3",
-      "students": "116",
-      "materials": "9",
-    },
-  ];
 
-  final List<List<Map<String, dynamic>>> _lecturerCoursesBySemester = [
-    [
-      {
-        "code": "BIT101",
-        "name": "Programming Fundamentals",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "36",
-      },
-      {
-        "code": "BIT112",
-        "name": "Digital Logic",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "2",
-        "students": "40",
-      },
-    ],
-    [
-      {
-        "code": "BIT202",
-        "name": "Information Systems",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "34",
-      },
-      {
-        "code": "BIC21003",
-        "name": "System Analysis and Design",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "2",
-        "students": "38",
-      },
-    ],
-    [
-      {
-        "code": "BIC21303",
-        "name": "Computer Networking",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "32",
-      },
-      {
-        "code": "BIT203",
-        "name": "Database Systems",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "2",
-        "students": "34",
-      },
-      {
-        "code": "BIT221",
-        "name": "Web Programming",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "3",
-        "students": "30",
-      },
-    ],
-    [
-      {
-        "code": "BIC21303",
-        "name": "Computer Networking",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "38",
-      },
-      {
-        "code": "BIT203",
-        "name": "Database Systems",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "2",
-        "students": "42",
-      },
-      {
-        "code": "BIT221",
-        "name": "Web Programming",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "3",
-        "students": "36",
-      },
-      {
-        "code": "BIT301",
-        "name": "Software Engineering",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "40",
-      },
-    ],
-    [
-      {
-        "code": "BIT401",
-        "name": "Final Year Project",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "1",
-        "students": "38",
-      },
-      {
-        "code": "BIT322",
-        "name": "Software Testing",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "2",
-        "students": "40",
-      },
-      {
-        "code": "BIT305",
-        "name": "Mobile Application Development",
-        "lecturer": "Dr. Sofia Najwa",
-        "section": "3",
-        "students": "38",
-      },
-    ],
-  ];
-
-  List<Map<String, String>> get _semesters => _lecturerSemesters;
-
-  List<List<Map<String, dynamic>>> get _coursesBySemester =>
-      _lecturerCoursesBySemester;
+  List<Map<String, String>> _lecturerSemesters = [];
+  List<List<Map<String, dynamic>>> _lecturerCoursesBySemester = [];
 
   @override
   void initState() {
     super.initState();
-    _currentSemesterIndex = 3;
-    _semesterController = PageController(
-      viewportFraction: 0.78,
-      initialPage: _currentSemesterIndex,
-    );
-    _semesterController.addListener(_handleSemesterScroll);
+    _loadLecturerData();
+  }
+
+  Future<void> _loadLecturerData() async {
+    final db = DatabaseHelper.instance;
+    final userId = DatabaseHelper.currentUserId;
+
+
+    final semestersData = await db.getLecturerSemesters(userId);
+
+    List<Map<String, String>> tempSemesters = [];
+    List<List<Map<String, dynamic>>> tempCourses = [];
+
+    for (var sem in semestersData) {
+      String session = sem['Academic_Session'].toString();
+      int semesterNum = int.parse(sem['Semester'].toString());
+      int courses = int.parse(sem['Total_Courses'].toString());
+      int students = int.parse(sem['Total_Students'].toString());
+
+
+      String status = "Past Semester";
+      if (session == "2025/2026" && semesterNum == 2) {
+        status = "Current Semester";
+      } else if (session.compareTo("2025/2026") > 0 ||
+          (session == "2025/2026" && semesterNum > 2)) {
+        status = "Next Semester";
+      }
+
+      String title = "$session Sem $semesterNum";
+
+      tempSemesters.add({
+        "title": title,
+        "status": status,
+        "courses": courses.toString(),
+        "students": students.toString(),
+        "materials": sem['Total_Materials'].toString(),
+      });
+
+
+      final coursesData =
+          await db.getLecturerCoursesBySemester(userId, session, semesterNum);
+
+      List<Map<String, dynamic>> formattedCourses = coursesData.map((c) {
+        return {
+          "code": c['code'].toString(),
+          "section_id": c['section_id'].toString(),
+          "name": c['name'].toString(),
+          "lecturer": "",
+          "section": c['section'].toString(),
+          "students": c['students'].toString(),
+        };
+      }).toList();
+
+      tempCourses.add(formattedCourses);
+    }
+
+
+    if (mounted) {
+      setState(() {
+        _lecturerSemesters = tempSemesters;
+        _lecturerCoursesBySemester = tempCourses;
+
+
+        _currentSemesterIndex = _lecturerSemesters
+            .indexWhere((s) => s['status'] == "Current Semester");
+        if (_currentSemesterIndex == -1) {
+
+          _currentSemesterIndex =
+              _lecturerSemesters.isNotEmpty ? _lecturerSemesters.length - 1 : 0;
+        }
+
+        if (_lecturerSemesters.isNotEmpty) {
+          _semesterController = PageController(
+            viewportFraction: 0.78,
+            initialPage: _currentSemesterIndex,
+          );
+          _semesterController!.addListener(_handleSemesterScroll);
+        }
+
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _semesterController.removeListener(_handleSemesterScroll);
-    _semesterController.dispose();
+    if (_semesterController != null) {
+      _semesterController!.removeListener(_handleSemesterScroll);
+      _semesterController!.dispose();
+    }
     super.dispose();
   }
 
   void _handleSemesterScroll() {
-    if (!_semesterController.hasClients ||
-        !_semesterController.position.haveDimensions) {
+    if (_semesterController == null ||
+        !_semesterController!.hasClients ||
+        !_semesterController!.position.haveDimensions) {
       return;
     }
 
-    final nextIndex = (_semesterController.page ?? _currentSemesterIndex)
-        .round()
-        .clamp(0, _semesters.length - 1);
+    final nextIndex =
+        (_semesterController!.page ?? _currentSemesterIndex.toDouble())
+            .round()
+            .clamp(0, _lecturerSemesters.length - 1);
 
     if (nextIndex != _currentSemesterIndex) {
       setState(() => _currentSemesterIndex = nextIndex);
@@ -226,12 +158,35 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
           ),
         ),
       ),
-      body: _buildBody(),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: kPrimaryBlue))
+          : _lecturerSemesters.isEmpty
+              ? _buildEmptyState()
+              : _buildBody(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.folder_off_outlined,
+              size: 60, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            "No academic records found.",
+            style: GoogleFonts.poppins(
+                color: const Color(0xFF7A859F), fontSize: 16),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBody() {
-    final currentCourses = _coursesBySemester[_currentSemesterIndex];
+    final currentCourses = _lecturerCoursesBySemester[_currentSemesterIndex];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 18, bottom: 120),
@@ -278,27 +233,29 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
       child: PageView.builder(
         controller: _semesterController,
         physics: const BouncingScrollPhysics(),
-        itemCount: _semesters.length,
+        itemCount: _lecturerSemesters.length,
         onPageChanged: (index) {
           setState(() => _currentSemesterIndex = index);
         },
         itemBuilder: (context, index) {
           return AnimatedBuilder(
-            animation: _semesterController,
+            animation: _semesterController!,
             builder: (context, child) {
               double scale = 1.0;
               int selectedIndex = _currentSemesterIndex;
 
-              if (_semesterController.position.haveDimensions) {
-                final page = _semesterController.page ?? _currentSemesterIndex;
+              if (_semesterController!.position.haveDimensions) {
+                final page = _semesterController!.page ??
+                    _currentSemesterIndex.toDouble();
                 scale = (1 - ((page - index).abs() * 0.05)).clamp(0.94, 1.0);
-                selectedIndex = page.round().clamp(0, _semesters.length - 1);
+                selectedIndex =
+                    page.round().clamp(0, _lecturerSemesters.length - 1);
               }
 
               return Transform.scale(
                 scale: scale,
                 child: _buildSemesterCard(
-                  _semesters[index],
+                  _lecturerSemesters[index],
                   isSelected: index == selectedIndex,
                 ),
               );
@@ -317,7 +274,7 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
@@ -359,16 +316,16 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
                 ),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 12),
           Text(
             semester["title"]!,
             style: GoogleFonts.poppins(
-              fontSize: 30,
+              fontSize: 26,
               fontWeight: FontWeight.w700,
               color: kPrimaryBlue,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             "Manage your classes with ease!",
             style: GoogleFonts.poppins(
@@ -378,24 +335,15 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
           ),
           const Spacer(),
           Divider(color: Colors.grey.shade300),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _simpleInfo(
-                "Courses",
-                semester["courses"]!,
-              ),
+              _simpleInfo("Courses", semester["courses"]!),
               _verticalDivider(),
-              _simpleInfo(
-                "Students",
-                semester["students"]!,
-              ),
+              _simpleInfo("Students", semester["students"]!),
               _verticalDivider(),
-              _simpleInfo(
-                "Materials",
-                semester["materials"]!,
-              ),
+              _simpleInfo("Materials", semester["materials"]!),
             ],
           ),
         ],
@@ -406,7 +354,7 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
   Widget _buildDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_semesters.length, (index) {
+      children: List.generate(_lecturerSemesters.length, (index) {
         final isActive = index == _currentSemesterIndex;
 
         return AnimatedContainer(
@@ -457,7 +405,8 @@ class _LecturerAcademicPageState extends State<LecturerAcademicPage> {
           context,
           MaterialPageRoute(
             builder: (_) => AcademicClassPage(
-              //isLecturer: true,
+
+              isLecturer: true,
               courseData: Map<String, String>.from(
                 course.map((key, value) => MapEntry(key, value.toString())),
               ),

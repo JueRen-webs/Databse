@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
+import 'database_helper.dart';
 import 'theme/app_colors.dart';
 
 class LecturerMovementPage extends StatefulWidget {
@@ -11,63 +13,128 @@ class LecturerMovementPage extends StatefulWidget {
 }
 
 class _LecturerMovementPageState extends State<LecturerMovementPage> {
-  String _selectedYear = '2026';
+  String _selectedYear = 'All';
+  List<MovementRecord> _records = [];
+  bool _loading = true;
 
-  static const _recordsByYear = {
-    '2026': [
-      MovementRecord(
-        date: '22/04 - 22/04',
-        location: 'MIMOS BERHAD, MRANTI PARK, KUALA LUMPUR',
-        purpose: 'JELAJAH INDUSTRI DIGITAL (JID) 2026 SIRI 1',
-      ),
-      MovementRecord(
-        date: '30/01 - 01/02',
-        location: 'THE STRAITS HOTEL & SUITE',
-        purpose: 'MESYUARAT SASARAN KERJA TAHUNAN 2026',
-      ),
-    ],
-    '2025': [
-      MovementRecord(
-        date: '18/09 - 19/09',
-        location: 'PERSADA JOHOR INTERNATIONAL CONVENTION CENTRE',
-        purpose: 'SEMINAR INOVASI PENGAJARAN DIGITAL 2025',
-      ),
-      MovementRecord(
-        date: '07/05 - 07/05',
-        location: 'UNIVERSITI MALAYA, KUALA LUMPUR',
-        purpose: 'BENGKEL KERJASAMA AKADEMIK ANTARA UNIVERSITI',
-      ),
-    ],
-    '2024': [
-      MovementRecord(
-        date: '11/11 - 12/11',
-        location: 'PUTRAJAYA INTERNATIONAL CONVENTION CENTRE',
-        purpose: 'PERSIDANGAN TRANSFORMASI DIGITAL SEKTOR AWAM',
-      ),
-      MovementRecord(
-        date: '21/02 - 22/02',
-        location: 'HOTEL GRAND PARAGON, JOHOR BAHRU',
-        purpose: 'MESYUARAT PENYELARASAN PROGRAM AKADEMIK',
-      ),
-    ],
-    '2023': [
-      MovementRecord(
-        date: '16/08 - 16/08',
-        location: 'UTM SKUDAI, JOHOR',
-        purpose: 'LAWATAN PENANDA ARAS FAKULTI',
-      ),
-      MovementRecord(
-        date: '10/01 - 11/01',
-        location: 'MELAKA INTERNATIONAL TRADE CENTRE',
-        purpose: 'KURSUS PEMANTAPAN STAF AKADEMIK',
-      ),
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
 
-  void _handleBottomTap(String tab) {
-    if (tab == 'Home') {
-      Navigator.pop(context);
-    }
+  Future<void> _loadRecords() async {
+    final rows = await DatabaseHelper.instance.getLecturerMovements(
+      DatabaseHelper.currentUserId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _records = rows.map(MovementRecord.fromDb).toList();
+      _loading = false;
+    });
+  }
+
+  List<String> get _years {
+    final years = _records
+        .map((record) => record.year)
+        .where((year) => year.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    return ['All', ...years];
+  }
+
+  Future<void> _showMovementDialog({MovementRecord? existing}) async {
+    DateTime start = existing?.startDate ?? DateTime.now();
+    DateTime end = existing?.endDate ?? start;
+    final location = TextEditingController(text: existing?.location ?? '');
+    final purpose = TextEditingController(text: existing?.purpose ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(existing == null ? 'Create Movement' : 'Edit Movement'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(DateFormat('dd MMM yyyy').format(start)),
+                subtitle: const Text('Start date'),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: start,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) {
+                    setDialogState(() {
+                      start = picked;
+                      if (end.isBefore(start)) end = start;
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(DateFormat('dd MMM yyyy').format(end)),
+                subtitle: const Text('End date'),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: end,
+                    firstDate: start,
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) setDialogState(() => end = picked);
+                },
+              ),
+              TextField(
+                controller: location,
+                decoration: const InputDecoration(labelText: 'Location'),
+              ),
+              TextField(
+                controller: purpose,
+                decoration: const InputDecoration(labelText: 'Purpose'),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+
+    await DatabaseHelper.instance.saveLecturerMovement(
+      movementId: existing?.id,
+      lecturerId: DatabaseHelper.currentUserId,
+      startDate: DateFormat('yyyy-MM-dd').format(start),
+      endDate: DateFormat('yyyy-MM-dd').format(end),
+      location: location.text.trim(),
+      purpose: purpose.text.trim(),
+    );
+    await _loadRecords();
+  }
+
+  Future<void> _deleteMovement(MovementRecord record) async {
+    if (record.id == null) return;
+    await DatabaseHelper.instance.deleteLecturerMovement(
+      DatabaseHelper.currentUserId,
+      record.id!,
+    );
+    await _loadRecords();
   }
 
   @override
@@ -75,7 +142,9 @@ class _LecturerMovementPageState extends State<LecturerMovementPage> {
     final colors = context.colors;
     final background =
         Color.lerp(colors.background, colors.brandPrimary, 0.025)!;
-    final records = _recordsByYear[_selectedYear] ?? const [];
+    final records = _selectedYear == 'All'
+        ? _records
+        : _records.where((record) => record.year == _selectedYear).toList();
 
     return Scaffold(
       backgroundColor: background,
@@ -97,36 +166,56 @@ class _LecturerMovementPageState extends State<LecturerMovementPage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 118),
-        child: Column(
-          children: [
-            _MovementYearFilter(
-              selectedYear: _selectedYear,
-              onYearSelected: (year) => setState(() => _selectedYear = year),
-            ),
-            const SizedBox(height: 16),
-            ...records.map(
-              (record) => Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: MovementCard(record: record),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showMovementDialog(),
+        backgroundColor: colors.brandPrimary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 118),
+              child: Column(
+                children: [
+                  _MovementYearFilter(
+                    years: _years,
+                    selectedYear: _selectedYear,
+                    onYearSelected: (year) =>
+                        setState(() => _selectedYear = year),
+                  ),
+                  const SizedBox(height: 16),
+                  if (records.isEmpty)
+                    Text(
+                      'No movement records',
+                      style: GoogleFonts.inter(color: colors.secondaryText),
+                    )
+                  else
+                    ...records.map(
+                      (record) => Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: MovementCard(
+                          record: record,
+                          onEdit: () => _showMovementDialog(existing: record),
+                          onDelete: () => _deleteMovement(record),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _MovementBottomNav(onTabTap: _handleBottomTap),
     );
   }
 }
 
 class _MovementYearFilter extends StatelessWidget {
   const _MovementYearFilter({
+    required this.years,
     required this.selectedYear,
     required this.onYearSelected,
   });
 
+  final List<String> years;
   final String selectedYear;
   final ValueChanged<String> onYearSelected;
 
@@ -154,7 +243,7 @@ class _MovementYearFilter extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
           onSelected: onYearSelected,
-          itemBuilder: (context) => const ['2026', '2025', '2024', '2023']
+          itemBuilder: (context) => years
               .map(
                 (year) => PopupMenuItem<String>(
                   value: year,
@@ -242,9 +331,16 @@ class _YearOption extends StatelessWidget {
 }
 
 class MovementCard extends StatelessWidget {
-  const MovementCard({super.key, required this.record});
+  const MovementCard({
+    super.key,
+    required this.record,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final MovementRecord record;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +362,21 @@ class MovementCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _MovementDateRow(date: record.date),
+          Row(
+            children: [
+              Expanded(child: _MovementDateRow(date: record.date)),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') onEdit();
+                  if (value == 'delete') onDelete();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+              ),
+            ],
+          ),
           Divider(height: 26, color: colors.borderColor),
           _MovementInfoRow(
             icon: Icons.place_outlined,
@@ -383,147 +493,42 @@ class _MovementIcon extends StatelessWidget {
   }
 }
 
-class _MovementBottomNav extends StatelessWidget {
-  const _MovementBottomNav({required this.onTabTap});
-
-  final ValueChanged<String> onTabTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      color: Colors.transparent,
-      padding: EdgeInsets.fromLTRB(18, 0, 18, 12 + bottomPadding),
-      child: Stack(
-        alignment: Alignment.topCenter,
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 22),
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.primaryText.withValues(alpha: 0.10),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _MovementNavItem(
-                  icon: Icons.home_outlined,
-                  label: 'Home',
-                  onTap: () => onTabTap('Home'),
-                ),
-                _MovementNavItem(
-                  icon: Icons.school_outlined,
-                  label: 'Academic',
-                  active: true,
-                  onTap: () => onTabTap('Academic'),
-                ),
-                const SizedBox(width: 58),
-                _MovementNavItem(
-                  icon: Icons.notifications_none_rounded,
-                  label: 'Notification',
-                  onTap: () => onTabTap('Notification'),
-                ),
-                _MovementNavItem(
-                  icon: Icons.person_outline_rounded,
-                  label: 'Profile',
-                  onTap: () => onTabTap('Profile'),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: -2,
-            child: Container(
-              width: 62,
-              height: 62,
-              decoration: BoxDecoration(
-                color: colors.brandPrimary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.brandPrimary.withValues(alpha: 0.28),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.qr_code_scanner_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MovementNavItem extends StatelessWidget {
-  const _MovementNavItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.active = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final color = active ? colors.brandPrimary : colors.secondaryText;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        width: 58,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                color: color,
-                fontSize: 9.5,
-                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class MovementRecord {
   const MovementRecord({
+    this.id,
+    this.startDate,
+    this.endDate,
     required this.date,
     required this.location,
     required this.purpose,
   });
 
+  factory MovementRecord.fromDb(Map<String, dynamic> row) {
+    final start = DateTime.tryParse(row['Start_Date']?.toString() ?? '');
+    final end = DateTime.tryParse(row['End_Date']?.toString() ?? '') ?? start;
+    final fmt = DateFormat('dd/MM');
+    return MovementRecord(
+      id: row['Movement_ID']?.toString(),
+      startDate: start,
+      endDate: end,
+      date: start == null
+          ? '-'
+          : '${fmt.format(start)} - ${fmt.format(end ?? start)} ${start.year}',
+      location: row['Location']?.toString().trim().isEmpty ?? true
+          ? '-'
+          : row['Location'].toString(),
+      purpose: row['Purpose']?.toString().trim().isEmpty ?? true
+          ? '-'
+          : row['Purpose'].toString(),
+    );
+  }
+
+  final String? id;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final String date;
   final String location;
   final String purpose;
+
+  String get year => (startDate ?? endDate)?.year.toString() ?? '';
 }

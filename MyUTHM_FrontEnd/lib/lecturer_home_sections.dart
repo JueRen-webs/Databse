@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'home/campus_map.dart' show showCampusMapMenu;
-import 'home/reservation_page.dart' show ReservationPage;
-import 'lecturer_annual_leave_page.dart';
-import 'lecturer_attendance_page.dart';
-import 'lecturer_home_models.dart';
-import 'lecturer_movement_page.dart';
-import 'lecturer_salary_page.dart';
-import 'lecturer_timetable_page.dart';
-import 'my_health_page.dart';
-import 'theme/app_colors.dart';
+import 'package:uthm/database_helper.dart';
+import 'package:uthm/home/daily_timetable_widget.dart';
+import 'package:uthm/home/campus_map.dart' show showCampusMapMenu;
+import 'package:uthm/lecturer_annual_leave_page.dart';
+import 'package:uthm/lecturer_attendance_page.dart';
+import 'package:uthm/lecturer_home_models.dart';
+import 'package:uthm/lecturer_movement_page.dart';
+import 'package:uthm/lecturer_salary_page.dart';
+import 'package:uthm/lecturer_timetable_page.dart';
+import 'package:uthm/my_health_page.dart';
+import 'package:uthm/theme/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LecturerFunctionPanel extends StatelessWidget {
   const LecturerFunctionPanel({super.key});
@@ -60,11 +61,9 @@ class _LecturerFeatureTile extends StatelessWidget {
     if (item.title == 'Campus map') {
       onTap = () => showCampusMapMenu(context);
     } else if (item.title == 'Reservation') {
-      onTap = () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ReservationPage()),
-        );
+      onTap = () async {
+        final uri = Uri.parse('https://stars.uthm.edu.my/');
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       };
     } else if (item.title == 'Attendance') {
       onTap = () {
@@ -146,54 +145,75 @@ class _LecturerFeatureTile extends StatelessWidget {
   }
 }
 
+
+
+
 class LecturerScheduleCard extends StatelessWidget {
   const LecturerScheduleCard({super.key});
 
-  static const List<LecturerScheduleItem> _items = [
-    LecturerScheduleItem(
-      start: '9:00 AM',
-      end: '10:15 AM',
-      title: 'Data Structures (CS 210)',
-      location: 'Engineering Hall, Room 201',
-    ),
-    LecturerScheduleItem(
-      start: '11:30 AM',
-      end: '12:45 PM',
-      title: 'Office Hours',
-      location: 'Engineering Hall, Room 201',
-    ),
-    LecturerScheduleItem(
-      start: '2:00 PM',
-      end: '3:15 PM',
-      title: 'Calculus I (MATH 101)',
-      location: 'Science Building, Room 105',
-    ),
-    LecturerScheduleItem(
-      start: '4:00 PM',
-      end: '5:00 PM',
-      title: 'Department Meeting',
-      location: 'Math Department Meeting Room',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return LecturerSectionCard(
-      child: Column(
-        children: [
-          const LecturerCardTitleRow(title: 'Daily Timetable'),
-          const SizedBox(height: 14),
-          ..._items.asMap().entries.map(
-                (entry) => _TimelineScheduleRow(
-                  item: entry.value,
-                  isLast: entry.key == _items.length - 1,
+    return FutureBuilder<List<StudentScheduleItem>>(
+      future: DatabaseHelper.instance.getLecturerDailyTimetable(DatabaseHelper.currentUserId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(color: Colors.blue),
+            ),
+          );
+        }
+
+        final dailyItems = snapshot.data ?? [];
+
+
+        if (dailyItems.isEmpty) {
+          return LecturerSectionCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const LecturerCardTitleRow(title: 'Daily Timetable'),
+                const SizedBox(height: 14),
+                Center(
+                  child: Text(
+                    "No classes scheduled for today! 🎉",
+                    style: GoogleFonts.inter(
+                      color: context.colors.secondaryText,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8, top: 16),
+              child: Text(
+                "Today's Schedule",
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: context.colors.primaryText,
                 ),
               ),
-        ],
-      ),
+            ),
+
+            DailyTimetableCard(items: dailyItems),
+          ],
+        );
+      },
     );
   }
 }
+
 
 class _TimelineScheduleRow extends StatelessWidget {
   const _TimelineScheduleRow({
@@ -299,40 +319,12 @@ class _TimelineScheduleRow extends StatelessWidget {
 class LecturerDueReminderCard extends StatelessWidget {
   const LecturerDueReminderCard({super.key});
 
-  static const List<LecturerDueItem> _items = [
-    LecturerDueItem(
-      title: 'Grade Lab Report 3',
-      course: 'Data Structures',
-      date: 'May 20, 2025',
-      daysLeft: 2,
-    ),
-    LecturerDueItem(
-      title: 'Problem Set 5',
-      course: 'Calculus I',
-      date: 'May 22, 2025',
-      daysLeft: 4,
-    ),
-    LecturerDueItem(
-      title: 'Essay Draft',
-      course: 'English Composition',
-      date: 'May 25, 2025',
-      daysLeft: 7,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return LecturerSectionCard(
-      child: Column(
-        children: [
-          const LecturerCardTitleRow(title: 'Due Date Reminder'),
-          const SizedBox(height: 12),
-          ..._items.map((item) => _DueReminderRow(item: item)),
-        ],
-      ),
-    );
+    return const DueDateReminderDbCard(includeStudentLinked: false);
   }
 }
+
 
 class _DueReminderRow extends StatelessWidget {
   const _DueReminderRow({required this.item});

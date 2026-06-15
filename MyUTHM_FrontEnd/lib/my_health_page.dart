@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'database_helper.dart';
 import 'theme/app_colors.dart';
 
 class MyHealthPage extends StatefulWidget {
@@ -14,98 +16,140 @@ class MyHealthPage extends StatefulWidget {
 class _MyHealthPageState extends State<MyHealthPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  String _selectedYear = '2026';
-
-  static const _charges = [
-    HealthChargeRecord(
-      date: '03-JAN-26',
-      clinic: 'Klinik Tawakal',
-      patient: 'Nur Fitriyyah Zahra Binti Mohd Adib',
-      amount: '68.00',
-    ),
-    HealthChargeRecord(
-      date: '10-JAN-26',
-      clinic: 'Klinik Pergigian Famili',
-      patient: 'Muhammad Adha Hafiz Bin Mohd Adib',
-      amount: '60.00',
-    ),
-    HealthChargeRecord(
-      date: '10-JAN-26',
-      clinic: 'Klinik Pergigian Famili',
-      patient: 'Muhammad Adi Maulud Bin Mohd Adib',
-      amount: '165.00',
-    ),
-    HealthChargeRecord(
-      date: '26-JAN-26',
-      clinic: 'Klinik Tawakal',
-      patient: 'Muhammad Adi Maulud Bin Mohd Adib',
-      amount: '76.00',
-    ),
-  ];
-
-  static const _medicalClinics = [
-    ClinicRecord(
-      name: 'KLINIK AL-FATAH (PARIT RAJA)',
-      address:
-          '8 (GROUND FLOOR), JALAN KELISA UTAMA 1, TAMAN KELISA UTAMA 86400',
-      phone: '013-315 4617',
-    ),
-    ClinicRecord(
-      name: 'KLINIK ANDA 24 JAM (PARIT RAJA)',
-      address:
-          'NO. 8 & 9 (TINGKAT BAWAH), JALAN UNIVERSITI 4, TAMAN UNIVERSITI 86400',
-      phone: '07-696 2595',
-    ),
-    ClinicRecord(
-      name: 'KLINIK DR HANNANI',
-      address:
-          'NO. 15 & 16 ARAS BAWAH, JALAN UNIVERSITI 4, TAMAN UNIVERSITI PARIT RAJA 86400',
-      phone: '013-340 3463',
-    ),
-    ClinicRecord(
-      name: 'KLINIK SEJAHTERA',
-      address: '2, JALAN RIA BARU, TAMAN RIA BAHRU 86400',
-      phone: '07-453 1282',
-    ),
-    ClinicRecord(
-      name: 'POLIKLINIK AL-RAZI & SURGERI',
-      address: 'NO. 3 JALAN BETIK, TAMAN MAJU PARIT RAJA 86400',
-      phone: '07-453 0608',
-    ),
-  ];
-
-  static const _dentalClinics = [
-    ClinicRecord(
-      name: 'KLINIK PERGIGIAN PUTRA (PARIT RAJA)',
-      address: 'NO. 66A, JALAN UNIVERSITI 1, TAMAN UNIVERSITI 86400',
-      phone: '07-453 0557',
-    ),
-    ClinicRecord(
-      name: 'KLINIK PERGIGIAN SUNNY DENTAL',
-      address: 'NO. 1A TINGKAT 1, SUSUR JALAN KLUANG, PARIT RAJA 96400',
-      phone: '012-736 1881',
-    ),
-    ClinicRecord(
-      name: 'KLINIK PERGIGIAN KRISTAL',
-      address: '104 A, TINGKAT 1, MEDAN KRISTAL, JALAN BESAR, PARIT RAJA 86400',
-      phone: '07-454 4200',
-    ),
-    ClinicRecord(
-      name: 'KLINIK PERGIGIAN PERMATA (PARIT RAJA)',
-      address: 'NO. 23 GF, JALAN UNIVERSITI 4, TAMAN UNIVERSITI 86400',
-      phone: '011-1145 1193',
-    ),
-    ClinicRecord(
-      name: 'KLINIK PERGIGIAN FAMILI',
-      address: '17A (TINGKAT 1), JALAN CERIA, PUSAT PERNIAGAAN CERIA 83000',
-      phone: '07-453 1199',
-    ),
-  ];
+  String _selectedYear = DateTime.now().year.toString();
+  List<HealthChargeRecord> _charges = [];
+  List<ClinicRecord> _medicalClinics = [];
+  List<ClinicRecord> _dentalClinics = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _loadHealthData();
+  }
+
+  Future<void> _loadHealthData() async {
+    final medicalRows =
+        await DatabaseHelper.instance.getClinics(typeName: 'MEDICAL');
+    final dentalRows =
+        await DatabaseHelper.instance.getClinics(typeName: 'DENTAL');
+    final chargeRows = await DatabaseHelper.instance.getMedicalRecords(
+      DatabaseHelper.currentUserId,
+    );
+    if (!mounted) return;
+    final charges = chargeRows.map(HealthChargeRecord.fromDb).toList();
+    final years = charges.map((record) => record.year).toSet();
+    setState(() {
+      _medicalClinics = medicalRows.map(ClinicRecord.fromDb).toList();
+      _dentalClinics = dentalRows.map(ClinicRecord.fromDb).toList();
+      _charges = charges;
+      if (years.isNotEmpty && !years.contains(_selectedYear)) {
+        final sortedYears = years.toList()
+          ..sort((a, b) => b.compareTo(a));
+        _selectedYear = sortedYears.first;
+      }
+    });
+  }
+
+  List<String> get _chargeYears {
+    final years = _charges
+        .map((record) => record.year)
+        .where((year) => year.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    return years.isEmpty ? [_selectedYear] : years;
+  }
+
+  List<HealthChargeRecord> get _selectedYearCharges =>
+      _charges.where((record) => record.year == _selectedYear).toList();
+
+  String _formatAmount(double value) => value.toStringAsFixed(2);
+
+  Future<void> _showAddMedicalRecordDialog() async {
+    DateTime selectedDate = DateTime.now();
+    final clinics = [..._medicalClinics, ..._dentalClinics]
+        .where((clinic) => clinic.id != null && clinic.id!.isNotEmpty)
+        .toList();
+    String? selectedClinicId = clinics.isEmpty ? null : clinics.first.id;
+    final chargesController = TextEditingController();
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Medical Record'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                subtitle: const Text('Medical date'),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => selectedDate = picked);
+                  }
+                },
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: selectedClinicId,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Clinic'),
+                items: clinics
+                    .map(
+                      (clinic) => DropdownMenuItem<String>(
+                        value: clinic.id,
+                        child: Text(
+                          clinic.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setDialogState(() => selectedClinicId = value),
+              ),
+              TextField(
+                controller: chargesController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Charges'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    final charges = double.tryParse(chargesController.text.trim());
+    if (charges == null || selectedClinicId == null) return;
+    await DatabaseHelper.instance.saveMedicalRecord(
+      lecturerId: DatabaseHelper.currentUserId,
+      clinicId: selectedClinicId!,
+      date: DateFormat('yyyy-MM-dd').format(selectedDate),
+      charges: charges,
+    );
+    await _loadHealthData();
   }
 
   @override
@@ -132,6 +176,13 @@ class _MyHealthPageState extends State<MyHealthPage>
     return Scaffold(
       backgroundColor: colors.background,
       appBar: const MyHealthAppBar(),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
+              onPressed: _showAddMedicalRecordDialog,
+              backgroundColor: colors.brandPrimary,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
       body: Column(
         children: [
           _HealthTabs(controller: _tabController),
@@ -141,11 +192,11 @@ class _MyHealthPageState extends State<MyHealthPage>
               children: [
                 _buildChargesTab(),
                 _buildPkuTab(),
-                const _ClinicListTab(
+                _ClinicListTab(
                   clinics: _medicalClinics,
                   icon: Icons.local_hospital_outlined,
                 ),
-                const _ClinicListTab(
+                _ClinicListTab(
                   clinics: _dentalClinics,
                   icon: Icons.medical_services_outlined,
                 ),
@@ -159,6 +210,15 @@ class _MyHealthPageState extends State<MyHealthPage>
 
   Widget _buildChargesTab() {
     final colors = context.colors;
+    final selectedCharges = _selectedYearCharges;
+    final cumulative = _charges.fold<double>(
+      0,
+      (sum, record) => sum + record.chargeValue,
+    );
+    final yearly = selectedCharges.fold<double>(
+      0,
+      (sum, record) => sum + record.chargeValue,
+    );
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -171,21 +231,21 @@ class _MyHealthPageState extends State<MyHealthPage>
               children: [
                 const _HealthSectionTitle('Overview'),
                 const SizedBox(height: 14),
-                const _ChargeSummaryTile(
+                _ChargeSummaryTile(
                   title: 'Cumulative',
                   subtitle: 'Total charges to date',
-                  amount: 'RM 7784.98',
+                  amount: 'RM ${_formatAmount(cumulative)}',
                 ),
                 const SizedBox(height: 10),
-                const _ChargeSummaryTile(
-                  title: '2026 Charges',
-                  subtitle: 'Total charges for 2026',
-                  amount: 'RM 644.00',
+                _ChargeSummaryTile(
+                  title: '$_selectedYear Charges',
+                  subtitle: 'Total charges for $_selectedYear',
+                  amount: 'RM ${_formatAmount(yearly)}',
                 ),
                 const SizedBox(height: 14),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: colors.cardAlt,
                     borderRadius: BorderRadius.circular(16),
@@ -211,13 +271,13 @@ class _MyHealthPageState extends State<MyHealthPage>
                         child: DropdownButton<String>(
                           value: _selectedYear,
                           borderRadius: BorderRadius.circular(14),
-                          items: const ['2026', '2025', '2024']
+                          items: _chargeYears
                               .map(
                                 (year) => DropdownMenuItem(
-                                  value: year,
-                                  child: Text(year),
-                                ),
-                              )
+                              value: year,
+                              child: Text(year),
+                            ),
+                          )
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
@@ -239,7 +299,18 @@ class _MyHealthPageState extends State<MyHealthPage>
               children: [
                 const _HealthSectionTitle('Charges Records'),
                 const SizedBox(height: 12),
-                ..._charges.map((record) => _ChargeRecordRow(record: record)),
+                if (selectedCharges.isEmpty)
+                  Text(
+                    'No medical records',
+                    style: GoogleFonts.inter(
+                      color: colors.secondaryText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                else
+                  ...selectedCharges
+                      .map((record) => _ChargeRecordRow(record: record)),
               ],
             ),
           ),
@@ -427,10 +498,10 @@ class _ClinicListTab extends StatelessWidget {
         children: clinics
             .map(
               (clinic) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ClinicCard(clinic: clinic, icon: icon),
-              ),
-            )
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ClinicCard(clinic: clinic, icon: icon),
+          ),
+        )
             .toList(),
       ),
     );
@@ -618,7 +689,7 @@ class _ClinicHoursTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 ...sessions.map(
-                  (session) => Padding(
+                      (session) => Padding(
                     padding: const EdgeInsets.only(bottom: 2),
                     child: Text(
                       session,
@@ -778,25 +849,70 @@ class _SoftIcon extends StatelessWidget {
 
 class HealthChargeRecord {
   const HealthChargeRecord({
+    this.id,
     required this.date,
     required this.clinic,
     required this.patient,
     required this.amount,
+    required this.chargeValue,
+    required this.year,
   });
 
+  factory HealthChargeRecord.fromDb(Map<String, dynamic> row) {
+    final parsedDate =
+        DateTime.tryParse(row['Medical_Date']?.toString() ?? '');
+    final charges =
+        double.tryParse(row['Charges']?.toString() ?? '') ?? 0;
+    String text(String key) {
+      final value = row[key]?.toString().trim() ?? '';
+      return value.isEmpty ? '-' : value;
+    }
+
+    return HealthChargeRecord(
+      id: row['Record_ID']?.toString(),
+      date: parsedDate == null
+          ? text('Medical_Date')
+          : DateFormat('dd-MMM-yy').format(parsedDate).toUpperCase(),
+      clinic: text('Clinic_Name') == '-' ? 'Medical Record' : text('Clinic_Name'),
+      patient: text('Lecturer_ID'),
+      amount: charges.toStringAsFixed(2),
+      chargeValue: charges,
+      year: parsedDate?.year.toString() ?? '',
+    );
+  }
+
+  final String? id;
   final String date;
   final String clinic;
   final String patient;
   final String amount;
+  final double chargeValue;
+  final String year;
 }
 
 class ClinicRecord {
   const ClinicRecord({
+    this.id,
     required this.name,
     required this.address,
     required this.phone,
   });
 
+  factory ClinicRecord.fromDb(Map<String, dynamic> row) {
+    String value(String key) {
+      final text = row[key]?.toString().trim() ?? '';
+      return text.isEmpty ? '-' : text;
+    }
+
+    return ClinicRecord(
+      id: value('Clinic_ID') == '-' ? null : value('Clinic_ID'),
+      name: value('Clinic_Name'),
+      address: value('Clinic_Address'),
+      phone: value('Clinic_Phone'),
+    );
+  }
+
+  final String? id;
   final String name;
   final String address;
   final String phone;

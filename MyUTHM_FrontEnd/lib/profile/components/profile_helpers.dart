@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uthm/theme/app_colors.dart';
 
 class ProfileHelpers {
-  // --- 打开链接的方法 ---
+
   static Future<void> launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     try {
@@ -16,19 +16,19 @@ class ProfileHelpers {
     }
   }
 
-  // --- 卡片通用阴影和圆角 ---
-  // --- 卡片通用样式 (严格遵循 Apple Utility Cards 规范) ---
+
+
   static BoxDecoration buildCardDecoration(BuildContext context) {
     return BoxDecoration(
       color: context.colors.surface,
-      // Apple 规范: 实用卡片采用 18px 圆角 (rounded.lg)
+
       borderRadius: BorderRadius.circular(18),
-      // Apple 规范: 彻底去除弥散阴影，改用 0.5px 的极细边框
+
       border: Border.all(color: context.colors.borderColor, width: 0.5),
     );
   }
 
-  // --- 小标题样式 ---
+
   static Widget buildSectionSubLabel(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 4),
@@ -36,7 +36,7 @@ class ProfileHelpers {
     );
   }
 
-  // --- 信息行 (如 Email, Phone) ---
+
   static Widget buildInfoRow(BuildContext context, IconData icon, String label, String value, {VoidCallback? onTap}) {
     final colors = context.colors;
     Widget row = Row(
@@ -75,7 +75,7 @@ class ProfileHelpers {
     return row;
   }
 
-  // --- 联系我们卡片 ---
+
   static Widget buildContactCard(BuildContext context, {required String deptName, required String address, required String phone, required String fax, required String email, required String web}) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -90,7 +90,7 @@ class ProfileHelpers {
     );
   }
 
-  // --- 联系我们行 ---
+
   static Widget buildContactRow(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),

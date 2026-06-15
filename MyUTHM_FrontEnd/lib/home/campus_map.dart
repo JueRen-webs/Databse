@@ -150,7 +150,7 @@ Widget _buildCampusMapOption(
   );
 }
 
-// Legacy map menu (used in HomePageContent)
+
 Future<void> launchLegacyMapUrl(String urlString) async {
   final Uri url = Uri.parse(urlString);
   try {

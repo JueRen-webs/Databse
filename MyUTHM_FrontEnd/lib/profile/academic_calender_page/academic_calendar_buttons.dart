@@ -19,9 +19,9 @@ class AcademicCalendarButton extends StatelessWidget {
         label: Text("Academic Calendar", style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: colors.brandPrimary, fontSize: 16)),
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.surface,
-          elevation: 0, // Apple: 扁平化，不要阴影
+          elevation: 0,
           side: BorderSide(color: colors.brandPrimary, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)), // 18px 圆角
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
       ),
     );

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'home/emergency_contacts_page.dart' show EmergencyContactsPage;
-import 'home/video_background.dart' show VideoBackground;
-import 'theme/app_colors.dart';
+import 'package:uthm/home/emergency_contacts_page.dart'
+    show EmergencyContactsPage;
+import 'package:uthm/home/video_background.dart'show VideoBackground;
+import 'package:uthm/database_helper.dart';
+import 'package:uthm/theme/app_colors.dart';
 
 class LecturerHomeHeader extends StatelessWidget {
   const LecturerHomeHeader({super.key});
@@ -70,47 +72,62 @@ class LecturerHomeHeader extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, top: 80),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _formattedDate(),
-                      style: GoogleFonts.inter(
-                        color: colors.surface.withValues(alpha: 0.92),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        shadows: const [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 2,
-                            color: Colors.black26,
+                Expanded(
+                  child: FutureBuilder<Map<String, dynamic>?>(
+                    future: DatabaseHelper.instance.getLecturerProfile(),
+                    builder: (context, snapshot) {
+                      final name =
+                          snapshot.data?['Name']?.toString().trim() ?? '';
+                      final displayName = name.isEmpty || name == '-'
+                          ? 'Lecturer'
+                          : name;
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _formattedDate(),
+                            style: GoogleFonts.inter(
+                              color: colors.surface.withValues(alpha: 0.92),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 2,
+                                  color: Colors.black26,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${_greeting()} $displayName',
+                              maxLines: 1,
+                              style: GoogleFonts.inter(
+                                color: colors.surface,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 4,
+                                    color: Colors.black45,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_greeting()} Professor Smith',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: colors.surface,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        shadows: const [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 4,
-                            color: Colors.black45,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
+                const SizedBox(width: 12),
                 Container(
                   decoration: BoxDecoration(
                     color: colors.surface.withValues(alpha: 0.30),

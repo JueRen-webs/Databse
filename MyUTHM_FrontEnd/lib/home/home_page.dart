@@ -1,26 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// 各功能页面
+import '../database_helper.dart';
 import 'constants.dart';
 import 'video_background.dart';
 import 'campus_map.dart';
 import 'emergency_contacts_page.dart';
 import 'finance_page.dart';
 import 'timetable_page.dart';
-import 'hostel_page.dart';
-import 'complaint_page.dart';
 import 'vehicle_page.dart';
 import 'course_page.dart';
-import 'reservation_page.dart';
 import 'daily_timetable_widget.dart';
 import '../theme/app_colors.dart';
 import '../uthm_social_links.dart';
 
-// ==========================================================
-// 1. 主屏幕容器 (HomeScreen)
-// ==========================================================
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -33,9 +26,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ==========================================================
-// 2. 主页内容 (HomePageContent)
-// ==========================================================
 class HomePageContent extends StatefulWidget {
   const HomePageContent({super.key});
 
@@ -44,80 +34,35 @@ class HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<HomePageContent> {
-  // 每日课表数据
-  final List<StudentScheduleItem> _todaySchedule = const [
-    StudentScheduleItem(
-      start: '8:00 AM',
-      end: '10:00 AM',
-      title: 'Data Structures',
-      location: 'FSKTM BS1',
-    ),
-    StudentScheduleItem(
-      start: '2:00 PM',
-      end: '4:00 PM',
-      title: 'Human Computer Interaction',
-      location: 'FSKTM BS1',
-    ),
-    StudentScheduleItem(
-      start: '4:00 PM',
-      end: '6:00 PM',
-      title: 'Operating Systems',
-      location: 'FSKTM BS1',
-    ),
-  ];
-
-  // 提醒事项数据
-  List<Map<String, dynamic>> reminders = [
-    {
-      "title": "Sad Test",
-      "date": "27/02",
-      "comment": "F2 Ground Floor",
-      "daysLeft": 2,
-      "color": Colors.orange,
-    },
-    {
-      "title": "Math Quiz",
-      "date": "25/02",
-      "comment": "Online Submission",
-      "daysLeft": 1,
-      "color": Colors.red,
-    },
-    {
-      "title": "History Proj",
-      "date": "15/03",
-      "comment": "Main Hall",
-      "daysLeft": 7,
-      "color": Colors.green,
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
-    reminders.sort((a, b) {
-      List<String> partsA = a['date'].split('/');
-      List<String> partsB = b['date'].split('/');
-      int dayA = int.parse(partsA[0]);
-      int monthA = int.parse(partsA[1]);
-      int dayB = int.parse(partsB[0]);
-      int monthB = int.parse(partsB[1]);
-      if (monthA != monthB) {
-        return monthA.compareTo(monthB);
-      } else {
-        return dayA.compareTo(dayB);
-      }
-    });
   }
 
   String _getFormattedDate() {
     var now = DateTime.now();
     List<String> months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     List<String> weekDays = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-      'Friday', 'Saturday', 'Sunday'
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
     ];
     return "${weekDays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}";
   }
@@ -144,9 +89,6 @@ class _HomePageContentState extends State<HomePageContent> {
     }
   }
 
-  // ----------------------------------------------------------
-  // Menu Icon Widget
-  // ----------------------------------------------------------
   Widget _buildMenuIcon(IconData icon, String label, {VoidCallback? onTap}) {
     final colors = context.colors;
 
@@ -183,9 +125,6 @@ class _HomePageContentState extends State<HomePageContent> {
     );
   }
 
-  // ----------------------------------------------------------
-  // Build
-  // ----------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -193,7 +132,6 @@ class _HomePageContentState extends State<HomePageContent> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // ── 顶部 Hero Header ──────────────────────────────────
         SizedBox(
           height: 220,
           child: Stack(
@@ -219,46 +157,50 @@ class _HomePageContentState extends State<HomePageContent> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // 左侧：日期 + 问候语
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getFormattedDate(),
-                          style: GoogleFonts.inter(
-                            color: colors.surface.withValues(alpha: 0.92),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(0, 1),
-                                blurRadius: 2,
-                                color: Colors.black26,
-                              )
-                            ],
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getFormattedDate(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: colors.surface.withValues(alpha: 0.92),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 2,
+                                  color: Colors.black26,
+                                )
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "${_getGreeting()} Lee Rou",
-                          style: GoogleFonts.inter(
-                            color: colors.surface,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            shadows: const [
-                              Shadow(
-                                offset: Offset(0, 1),
-                                blurRadius: 4,
-                                color: Colors.black45,
-                              )
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            "${_getGreeting()} Lee Rou",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: colors.surface,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              shadows: const [
+                                Shadow(
+                                  offset: Offset(0, 1),
+                                  blurRadius: 4,
+                                  color: Colors.black45,
+                                )
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-
-                    // 右侧：紧急联系人按钮
+                    const SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
                         color: colors.surface.withValues(alpha: 0.30),
@@ -269,12 +211,14 @@ class _HomePageContentState extends State<HomePageContent> {
                         ),
                       ),
                       child: IconButton(
-                        icon: Icon(Icons.phone, size: 24, color: colors.surface),
+                        icon:
+                            Icon(Icons.phone, size: 24, color: colors.surface),
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const EmergencyContactsPage(),
+                              builder: (context) =>
+                                  const EmergencyContactsPage(),
                             ),
                           );
                         },
@@ -286,14 +230,11 @@ class _HomePageContentState extends State<HomePageContent> {
             ],
           ),
         ),
-
-        // ── 下方内容区域 ──────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 菜单区域 ────────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -309,7 +250,6 @@ class _HomePageContentState extends State<HomePageContent> {
                 ),
                 child: Column(
                   children: [
-                    // 第一行
                     Row(
                       children: [
                         Expanded(
@@ -354,14 +294,15 @@ class _HomePageContentState extends State<HomePageContent> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    // 第二行
                     Row(
                       children: [
                         Expanded(
                           child: _buildMenuIcon(
                             Icons.home_work_outlined,
                             'Hostel',
-                            onTap: () => showHostelMenu(context),
+                            onTap: () => _launchURL(
+                              'https://homs.uthm.edu.my/Start?ReturnUrl=%2F',
+                            ),
                           ),
                         ),
                         Expanded(
@@ -392,11 +333,8 @@ class _HomePageContentState extends State<HomePageContent> {
                           child: _buildMenuIcon(
                             Icons.access_time,
                             'Reservation',
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ReservationPage(),
-                              ),
+                            onTap: () => _launchURL(
+                              'https://stars.uthm.edu.my/',
                             ),
                           ),
                         ),
@@ -405,22 +343,75 @@ class _HomePageContentState extends State<HomePageContent> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
+              FutureBuilder<List<StudentScheduleItem>>(
+                future: DatabaseHelper.instance
+                    .getStudentDailyTimetable(DatabaseHelper.currentUserId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      width: double.infinity,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primaryText.withValues(alpha: 0.055),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.blue,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
-              // ── Daily Timetable (来自 daily_timetable_widget.dart) ──
-              DailyTimetableCard(items: _todaySchedule),
+                  final dailyItems = snapshot.data ?? [];
+                  if (dailyItems.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colors.primaryText.withValues(alpha: 0.055),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          "No classes scheduled for today! 🎉",
+                          style: GoogleFonts.inter(
+                            color: colors.secondaryText,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
+                  return DailyTimetableCard(items: dailyItems);
+                },
+              ),
               const SizedBox(height: 16),
-
-              // ── Due Date Reminder (来自 daily_timetable_widget.dart) ──
-              DueDateReminderCard(reminders: reminders),
-
+              const DueDateReminderDbCard(),
               const SizedBox(height: 40),
-
-              // ── 社交链接 ────────────────────────────────────
               const UthmSocialLinksRow(),
-
               const SizedBox(height: 120),
             ],
           ),

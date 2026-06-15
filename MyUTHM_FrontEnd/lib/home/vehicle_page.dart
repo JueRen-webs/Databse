@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import 'constants.dart';
+import '../database_helper.dart';
 
-// ==========================================
-// D. Vehicle Management
-// ==========================================
+
+
+
 
 class VehiclePage extends StatefulWidget {
   const VehiclePage({super.key});
@@ -15,42 +17,61 @@ class VehiclePage extends StatefulWidget {
 }
 
 class _VehiclePageState extends State<VehiclePage> {
-  List<Map<String, String>> vehicles = [
-    {
-      "session": "20252026",
-      "plate": "VML2141",
-      "sticker": "04253",
-      "date": "29-OCT-25",
-      "type": "MOTORCAR",
-      "model": "PROTON PERSONA",
-      "color": "SILVER"
-    },
-    {
-      "session": "20242025",
-      "plate": "JSU1234",
-      "sticker": "0",
-      "date": "10-JAN-25",
-      "type": "MOTORCAR",
-      "model": "PERODUA MYVI",
-      "color": "BLUE"
-    },
-    {
-      "session": "20252026",
-      "plate": "WEB8888",
-      "sticker": "NONE",
-      "date": "-",
-      "type": "MOTORCAR",
-      "model": "HONDA CIVIC",
-      "color": "WHITE"
-    },
-  ];
 
-  void _refresh() => setState(() {});
+  List<Map<String, String>> vehicles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFromDatabase();
+  }
+
+
+  Future<void> _loadFromDatabase() async {
+    try {
+      final dbData = await DatabaseHelper.instance.getVehiclesByStudent('AI240166');
+
+      List<Map<String, String>> loadedVehicles = [];
+      for (var row in dbData) {
+        String uiStickerState = "NONE";
+        String status = row['Sticker_Status']?.toString() ?? '';
+
+        if (status == 'Application Failed') {
+          uiStickerState = "0";
+        } else if (status == 'PENDING') {
+          uiStickerState = "PENDING";
+        } else if (status == 'Approved' && row['Sticker_Number'] != null) {
+          uiStickerState = row['Sticker_Number'].toString();
+        }
+
+        loadedVehicles.add({
+          "session": row['Session_Year']?.toString() ?? "",
+          "plate": row['Plate_Number']?.toString() ?? "",
+          "sticker": uiStickerState,
+          "date": row['Registration_Date']?.toString() ?? "",
+          "type": row['type']?.toString() ?? "MOTORCAR",
+          "model": row['Model']?.toString() ?? "",
+          "color": row['Color']?.toString() ?? ""
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          vehicles = loadedVehicles;
+        });
+      }
+    } catch (e) {
+      print("❌ 读取数据库失败: $e");
+    }
+  }
+
+  void _refresh() => _loadFromDatabase();
 
   void _navigateToNewVehicle() async {
     final result = await Navigator.push(context,
         MaterialPageRoute(builder: (context) => const NewVehiclePage()));
     if (result != null && result is Map<String, String>) {
+
       setState(() {
         vehicles.insert(0, result);
       });
@@ -131,7 +152,7 @@ class _VehiclePageState extends State<VehiclePage> {
                                     decoration: BoxDecoration(
                                         color: Colors.grey.shade200,
                                         borderRadius:
-                                            BorderRadius.circular(4)),
+                                        BorderRadius.circular(4)),
                                     child: Text(v['session']!,
                                         style: GoogleFonts.inter(
                                             fontSize: 12,
@@ -143,14 +164,14 @@ class _VehiclePageState extends State<VehiclePage> {
                           _row("Color", v['color']!),
                           Padding(
                               padding:
-                                  const EdgeInsets.symmetric(vertical: 4),
+                              const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
                                   mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text("Sticker No.",
                                         style:
-                                            TextStyle(color: Colors.grey)),
+                                        TextStyle(color: Colors.grey)),
                                     Text(stickerDisplay,
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
@@ -221,21 +242,45 @@ class _NewVehiclePageState extends State<NewVehiclePage> {
           context: context,
           barrierDismissible: false,
           builder: (_) => const Center(child: CircularProgressIndicator()));
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
-      Navigator.pop(context);
 
-      final nv = {
-        "session": "20252026",
-        "plate": _plate.text.toUpperCase(),
-        "sticker": "NONE",
-        "date": "JUST NOW",
-        "type": _type,
-        "model": _model.text.toUpperCase(),
-        "color": _color.text.toUpperCase()
-      };
-      if (!mounted) return;
-      Navigator.pop(context, nv);
+      try {
+
+        String todayDate = DateFormat('dd-MMM-yy').format(DateTime.now()).toUpperCase();
+
+        int typeId = _type == "MOTORCAR" ? 1 : 2;
+
+
+        await DatabaseHelper.instance.insertVehicle({
+          "Student_ID": "AI240166",
+          "Vehicle_Type_ID": typeId,
+          "Plate_Number": _plate.text.toUpperCase(),
+          "Model": _model.text.toUpperCase(),
+          "Color": _color.text.toUpperCase(),
+          "Registration_Date": todayDate,
+          "Session_Year": "20252026",
+          "Sticker_Number": null,
+          "Sticker_Status": "Not Applied"
+        });
+
+        if (!mounted) return;
+        Navigator.pop(context);
+
+
+        final nv = {
+          "session": "20252026",
+          "plate": _plate.text.toUpperCase(),
+          "sticker": "NONE",
+          "date": todayDate,
+          "type": _type,
+          "model": _model.text.toUpperCase(),
+          "color": _color.text.toUpperCase()
+        };
+        Navigator.pop(context, nv);
+      } catch (e) {
+        if (!mounted) return;
+        Navigator.pop(context);
+        print("❌ 插入数据库失败: $e");
+      }
     }
   }
 
@@ -244,8 +289,7 @@ class _NewVehiclePageState extends State<NewVehiclePage> {
     return Scaffold(
       appBar: AppBar(
           title: const Text("Register New Vehicle",
-              style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0.5,
           iconTheme: const IconThemeData(color: Colors.black)),
@@ -331,21 +375,7 @@ class _ApplyStickerPageState extends State<ApplyStickerPage> {
     selectedPlate = widget.initialSelection;
   }
 
-  int _calculatePrice() {
-    if (selectedPlate == null) return 0;
-    final selectedVehicle =
-        widget.vehicles.firstWhere((v) => v['plate'] == selectedPlate);
-    final String type = selectedVehicle['type']!;
-    int count = widget.vehicles.where((v) {
-      bool isSameType = v['type'] == type;
-      bool hasSticker = v['sticker'] != "0" &&
-          v['sticker'] != "NONE" &&
-          v['sticker'] != "FAILED";
-      return isSameType && hasSticker;
-    }).length;
-    return count >= 1 ? 10 : 2;
-  }
-
+  // 检查是否已经是有效贴纸号
   bool _isAlreadyIssued(String s) {
     if (s == "0" || s == "PENDING" || s == "FAILED" || s == "NONE")
       return false;
@@ -355,93 +385,89 @@ class _ApplyStickerPageState extends State<ApplyStickerPage> {
   void _apply() async {
     if (selectedPlate == null) return;
 
-    int price = _calculatePrice();
+    // 1. 🛑 核心逻辑：检查该学生当前已经申请/拥有的有效贴纸总数
+    //（只要不是 NONE 且不是 0 失败状态，PENDING 和已有号码的都算占用名额）
+    int activeStickerCount = widget.vehicles.where((v) {
+      String s = v['sticker'] ?? "NONE";
+      return s != "NONE" && s != "0";
+    }).length;
 
-    bool? confirmPayment = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text("Make Payment"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Vehicle: $selectedPlate"),
-            const SizedBox(height: 8),
-            Text(
-                "Fee Tier: ${price == 10 ? 'Second Vehicle' : 'First Vehicle'}"),
-            const Divider(),
-            Text("Total Amount: RM $price.00",
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: kPrimaryBlue)),
+
+    if (activeStickerCount >= 2) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text("Application Denied", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+          content: const Text("Maximum limit reached. Each student is only allowed to apply for a maximum of 2 vehicle stickers."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK", style: TextStyle(fontWeight: FontWeight.bold, color: kPrimaryBlue)),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancel",
-                  style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text("Pay Now",
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+      );
+      return;
+    }
 
-    if (confirmPayment != true) return;
 
     showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => const Center(child: CircularProgressIndicator()));
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    Navigator.pop(context);
 
-    for (var vehicle in widget.vehicles) {
-      if (vehicle['plate'] == selectedPlate) {
-        vehicle['sticker'] = "PENDING";
+    try {
+
+      await DatabaseHelper.instance.updateStickerToPending(selectedPlate!);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+
+      for (var vehicle in widget.vehicles) {
+        if (vehicle['plate'] == selectedPlate) {
+          vehicle['sticker'] = "PENDING";
+        }
       }
-    }
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 60),
-            SizedBox(height: 15),
-            Text("Payment Successful",
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            SizedBox(height: 10),
-            Text("Your application is now PENDING review.",
-                textAlign: TextAlign.center),
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 60),
+              SizedBox(height: 15),
+              Text("Successfully Submitted",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              SizedBox(height: 10),
+              Text("Your vehicle sticker application has been successfully submitted and is now pending review.",
+                  textAlign: TextAlign.center),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text("OK", style: TextStyle(fontWeight: FontWeight.bold)))
           ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text("OK"))
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      print("❌ 提交申请失败: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+
     final availableVehicles = widget.vehicles.where((v) {
       String s = v['sticker'] ?? "";
       return s != "0" &&
@@ -454,8 +480,7 @@ class _ApplyStickerPageState extends State<ApplyStickerPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
           title: const Text("Apply Vehicle Sticker",
-              style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0.5,
           iconTheme: const IconThemeData(color: Colors.black)),
@@ -468,14 +493,11 @@ class _ApplyStickerPageState extends State<ApplyStickerPage> {
                 color: const Color(0xFFFFF3CD),
                 border: Border.all(color: const Color(0xFFFFEEBA)),
                 borderRadius: BorderRadius.circular(4)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text("UTHM STICKER INFO",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              _fee("Motorcar (First)", "RM 2.00"),
-              _fee("Motorcar (Second)", "RM 10.00"),
-              _fee("Motorcycle (First)", "RM 2.00"),
-              _fee("Motorcycle (Second)", "RM 10.00"),
+            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text("UTHM STICKER INFO", style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              Text("• Each student is eligible to apply for up to TWO (2) vehicle stickers only."),
+              Text("• Applications are subject to faculty approval."),
             ]),
           ),
           const SizedBox(height: 30),
@@ -526,11 +548,4 @@ class _ApplyStickerPageState extends State<ApplyStickerPage> {
       ),
     );
   }
-
-  Widget _fee(String l, String p) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(l),
-        Text(p, style: const TextStyle(fontWeight: FontWeight.bold))
-      ]));
 }

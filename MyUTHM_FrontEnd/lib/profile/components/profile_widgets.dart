@@ -51,7 +51,9 @@ class FlatIdentityHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            "(Matric No: ${userData['User_ID'] ?? '-'})",
+            userData['Role']?.toString().toLowerCase() == 'lecturer'
+                ? "(Staff ID: ${userData['User_ID'] ?? '-'})"
+                : "(Matric No: ${userData['User_ID'] ?? '-'})",
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.white.withOpacity(0.85),

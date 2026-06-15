@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
+import 'database_helper.dart';
 import 'theme/app_colors.dart';
 
 class LecturerAnnualLeavePage extends StatefulWidget {
@@ -12,127 +14,158 @@ class LecturerAnnualLeavePage extends StatefulWidget {
 }
 
 class _LecturerAnnualLeavePageState extends State<LecturerAnnualLeavePage> {
-  String _selectedYear = '2026';
+  String _selectedYear = DateTime.now().year.toString();
+  List<LeaveHistoryRecord> _records = [];
+  List<Map<String, dynamic>> _types = [];
+  bool _loading = true;
 
-  static const _leaveByYear = {
-    '2026': LeaveYearData(
-      entitlement: '31 + 9 = 40',
-      taken: '6',
-      balance: '34',
-      history: [
-        LeaveHistoryRecord(
-          from: '28/05',
-          to: '28/05',
-          day: '1',
-          type: 'Cuti Tanpa Rekod Kelompok',
-          note: 'Hari raya Haji kedua',
+  int get _taken => _records
+      .where((record) => record.year == _selectedYear)
+      .fold(0, (sum, record) => sum + (int.tryParse(record.day) ?? 0));
+
+  int get _balance => 31 - _taken;
+
+  List<String> get _years {
+    final years = _records
+        .map((record) => record.year)
+        .where((year) => year.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (!years.contains(_selectedYear)) years.insert(0, _selectedYear);
+    return years;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final rows = await DatabaseHelper.instance.getLecturerLeaves(
+      DatabaseHelper.currentUserId,
+    );
+    final types = await DatabaseHelper.instance.getLeaveTypes();
+    if (!mounted) return;
+    setState(() {
+      _records = rows.map(LeaveHistoryRecord.fromDb).toList();
+      _types = types;
+      _loading = false;
+    });
+  }
+
+  Future<void> _showLeaveDialog({LeaveHistoryRecord? existing}) async {
+    int typeId = int.tryParse(existing?.typeId ?? '') ??
+        int.tryParse(_types.firstOrNull?['Leave_Type_ID']?.toString() ?? '1') ??
+        1;
+    DateTime start = existing?.startDate ?? DateTime.now();
+    DateTime end = existing?.endDate ?? start;
+    final note = TextEditingController(text: existing?.note == '-' ? '' : existing?.note ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(existing == null ? 'Create Leave' : 'Edit Leave'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<int>(
+                initialValue: typeId,
+                decoration: const InputDecoration(labelText: 'Leave type'),
+                items: _types
+                    .map(
+                      (type) => DropdownMenuItem<int>(
+                        value: int.tryParse(type['Leave_Type_ID'].toString()),
+                        child: Text(type['Leave_Name']?.toString() ?? '-'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setDialogState(() => typeId = value);
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(DateFormat('dd MMM yyyy').format(start)),
+                subtitle: const Text('Start date'),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: start,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) {
+                    setDialogState(() {
+                      start = picked;
+                      if (end.isBefore(start)) end = start;
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(DateFormat('dd MMM yyyy').format(end)),
+                subtitle: const Text('End date'),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: end,
+                    firstDate: start,
+                    lastDate: DateTime(2035),
+                  );
+                  if (picked != null) setDialogState(() => end = picked);
+                },
+              ),
+              TextField(
+                controller: note,
+                decoration: const InputDecoration(labelText: 'Note'),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
         ),
-        LeaveHistoryRecord(
-          from: '19/03',
-          to: '27/03',
-          day: '4',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'hari raya',
-        ),
-        LeaveHistoryRecord(
-          from: '06/03',
-          to: '06/03',
-          day: '1',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'taklimat SDEA di SRAB Benut',
-        ),
-        LeaveHistoryRecord(
-          from: '20/02',
-          to: '20/02',
-          day: '1',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'awal ramadhan',
-        ),
-      ],
-    ),
-    '2025': LeaveYearData(
-      entitlement: '30 + 8 = 38',
-      taken: '9',
-      balance: '29',
-      history: [
-        LeaveHistoryRecord(
-          from: '18/12',
-          to: '19/12',
-          day: '2',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'family matters',
-        ),
-        LeaveHistoryRecord(
-          from: '14/07',
-          to: '16/07',
-          day: '3',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'conference recovery',
-        ),
-        LeaveHistoryRecord(
-          from: '03/02',
-          to: '03/02',
-          day: '1',
-          type: 'Cuti Tanpa Rekod',
-          note: 'official appointment',
-        ),
-      ],
-    ),
-    '2024': LeaveYearData(
-      entitlement: '30 + 7 = 37',
-      taken: '11',
-      balance: '26',
-      history: [
-        LeaveHistoryRecord(
-          from: '22/10',
-          to: '24/10',
-          day: '3',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'personal leave',
-        ),
-        LeaveHistoryRecord(
-          from: '12/06',
-          to: '13/06',
-          day: '2',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'school holiday',
-        ),
-        LeaveHistoryRecord(
-          from: '08/01',
-          to: '08/01',
-          day: '1',
-          type: 'Cuti Tanpa Rekod',
-          note: 'briefing programme',
-        ),
-      ],
-    ),
-    '2023': LeaveYearData(
-      entitlement: '28 + 7 = 35',
-      taken: '8',
-      balance: '27',
-      history: [
-        LeaveHistoryRecord(
-          from: '19/09',
-          to: '20/09',
-          day: '2',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'family event',
-        ),
-        LeaveHistoryRecord(
-          from: '04/04',
-          to: '06/04',
-          day: '3',
-          type: 'Cuti Rehat Gaji Penuh',
-          note: 'medical care',
-        ),
-      ],
-    ),
-  };
+      ),
+    );
+    if (saved != true) return;
+
+    await DatabaseHelper.instance.saveLecturerLeave(
+      recordId: existing?.id,
+      lecturerId: DatabaseHelper.currentUserId,
+      leaveTypeId: typeId,
+      startDate: DateFormat('yyyy-MM-dd').format(start),
+      endDate: DateFormat('yyyy-MM-dd').format(end),
+      note: note.text.trim(),
+    );
+    await _loadRecords();
+  }
+
+  Future<void> _deleteLeave(LeaveHistoryRecord record) async {
+    if (record.id == null) return;
+    await DatabaseHelper.instance.deleteLecturerLeave(
+      DatabaseHelper.currentUserId,
+      record.id!,
+    );
+    await _loadRecords();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final data = _leaveByYear[_selectedYear]!;
+    final history =
+        _records.where((record) => record.year == _selectedYear).toList();
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -154,48 +187,63 @@ class _LecturerAnnualLeavePageState extends State<LecturerAnnualLeavePage> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
-        child: Column(
-          children: [
-            _YearSelectorCard(
-              selectedYear: _selectedYear,
-              onYearSelected: (year) => setState(() => _selectedYear = year),
-            ),
-            const SizedBox(height: 14),
-            _LeaveSummaryCard(
-              icon: Icons.event_available_outlined,
-              label: 'Leave Entitlement',
-              value: data.entitlement,
-            ),
-            const SizedBox(height: 12),
-            _LeaveSummaryCard(
-              icon: Icons.logout_rounded,
-              label: 'Leave Taken',
-              value: data.taken,
-            ),
-            const SizedBox(height: 12),
-            _LeaveSummaryCard(
-              icon: Icons.account_balance_wallet_outlined,
-              label: 'Leave Balance',
-              value: data.balance,
-            ),
-            const SizedBox(height: 16),
-            _LeaveHistoryCard(records: data.history),
-          ],
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showLeaveDialog(),
+        backgroundColor: colors.brandPrimary,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+              child: Column(
+                children: [
+                  _YearSelectorCard(
+                    years: _years,
+                    selectedYear: _selectedYear,
+                    onYearSelected: (year) =>
+                        setState(() => _selectedYear = year),
+                  ),
+                  const SizedBox(height: 14),
+                  const _LeaveSummaryCard(
+                    icon: Icons.event_available_outlined,
+                    label: 'Leave Entitlement',
+                    value: '31',
+                  ),
+                  const SizedBox(height: 12),
+                  _LeaveSummaryCard(
+                    icon: Icons.logout_rounded,
+                    label: 'Leave Taken',
+                    value: '$_taken',
+                  ),
+                  const SizedBox(height: 12),
+                  _LeaveSummaryCard(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Leave Balance',
+                    value: '$_balance',
+                  ),
+                  const SizedBox(height: 16),
+                  _LeaveHistoryCard(
+                    records: history,
+                    onEdit: (record) => _showLeaveDialog(existing: record),
+                    onDelete: _deleteLeave,
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
 
 class _YearSelectorCard extends StatelessWidget {
   const _YearSelectorCard({
+    required this.years,
     required this.selectedYear,
     required this.onYearSelected,
   });
 
+  final List<String> years;
   final String selectedYear;
   final ValueChanged<String> onYearSelected;
 
@@ -224,7 +272,7 @@ class _YearSelectorCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             onSelected: onYearSelected,
-            itemBuilder: (context) => const ['2026', '2025', '2024', '2023']
+            itemBuilder: (context) => years
                 .map(
                   (year) => PopupMenuItem<String>(
                     value: year,
@@ -360,9 +408,15 @@ class _LeaveSummaryCard extends StatelessWidget {
 }
 
 class _LeaveHistoryCard extends StatelessWidget {
-  const _LeaveHistoryCard({required this.records});
+  const _LeaveHistoryCard({
+    required this.records,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final List<LeaveHistoryRecord> records;
+  final ValueChanged<LeaveHistoryRecord> onEdit;
+  final ValueChanged<LeaveHistoryRecord> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +438,24 @@ class _LeaveHistoryCard extends StatelessWidget {
           const SizedBox(height: 14),
           _LeaveHistoryHeader(),
           const SizedBox(height: 4),
-          ...records.map((record) => _LeaveHistoryRow(record: record)),
+          if (records.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Center(
+                child: Text(
+                  'No leave records',
+                  style: GoogleFonts.inter(color: colors.secondaryText),
+                ),
+              ),
+            )
+          else
+            ...records.map(
+              (record) => _LeaveHistoryRow(
+                record: record,
+                onEdit: () => onEdit(record),
+                onDelete: () => onDelete(record),
+              ),
+            ),
         ],
       ),
     );
@@ -410,6 +481,7 @@ class _LeaveHistoryHeader extends StatelessWidget {
           SizedBox(width: 34, child: Text('DAY', style: style)),
           Expanded(flex: 3, child: Text('TYPE', style: style)),
           Expanded(flex: 2, child: Text('NOTE', style: style)),
+          const SizedBox(width: 28),
         ],
       ),
     );
@@ -417,9 +489,15 @@ class _LeaveHistoryHeader extends StatelessWidget {
 }
 
 class _LeaveHistoryRow extends StatelessWidget {
-  const _LeaveHistoryRow({required this.record});
+  const _LeaveHistoryRow({
+    required this.record,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final LeaveHistoryRecord record;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -473,6 +551,18 @@ class _LeaveHistoryRow extends StatelessWidget {
               ),
             ),
           ),
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            iconSize: 18,
+            onSelected: (value) {
+              if (value == 'edit') onEdit();
+              if (value == 'delete') onDelete();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
+          ),
         ],
       ),
     );
@@ -511,22 +601,12 @@ class _LeaveCard extends StatelessWidget {
   }
 }
 
-class LeaveYearData {
-  const LeaveYearData({
-    required this.entitlement,
-    required this.taken,
-    required this.balance,
-    required this.history,
-  });
-
-  final String entitlement;
-  final String taken;
-  final String balance;
-  final List<LeaveHistoryRecord> history;
-}
-
 class LeaveHistoryRecord {
   const LeaveHistoryRecord({
+    this.id,
+    this.typeId,
+    this.startDate,
+    this.endDate,
     required this.from,
     required this.to,
     required this.day,
@@ -534,9 +614,34 @@ class LeaveHistoryRecord {
     required this.note,
   });
 
+  factory LeaveHistoryRecord.fromDb(Map<String, dynamic> row) {
+    final start = DateTime.tryParse(row['Start_Date']?.toString() ?? '');
+    final end = DateTime.tryParse(row['End_Date']?.toString() ?? '') ?? start;
+    final fmt = DateFormat('dd/MM');
+    return LeaveHistoryRecord(
+      id: row['Record_ID']?.toString(),
+      typeId: row['Leave_Type_ID']?.toString(),
+      startDate: start,
+      endDate: end,
+      from: start == null ? '-' : fmt.format(start),
+      to: end == null ? '-' : fmt.format(end),
+      day: row['Leave_Taken']?.toString() ?? '0',
+      type: row['Leave_Name']?.toString() ?? '-',
+      note: row['Note']?.toString().trim().isEmpty ?? true
+          ? '-'
+          : row['Note'].toString(),
+    );
+  }
+
+  final String? id;
+  final String? typeId;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final String from;
   final String to;
   final String day;
   final String type;
   final String note;
+
+  String get year => (startDate ?? endDate)?.year.toString() ?? '';
 }

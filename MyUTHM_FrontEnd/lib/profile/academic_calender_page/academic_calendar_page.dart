@@ -7,13 +7,13 @@ class AcademicCalendarPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 同样拿到颜色包
+
     final colors = context.colors;
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: colors.brandPrimary, // 替换 kPrimaryBlue
+        backgroundColor: colors.brandPrimary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),

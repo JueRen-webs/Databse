@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// 引入你的各个页面
 import 'home/home_page.dart';
 import 'lecturer_dashboard_page.dart';
 import 'academic_page.dart';
@@ -9,36 +7,34 @@ import 'lecturer_academic_page.dart';
 import 'scan_page.dart';
 import 'notification_page.dart';
 import 'profile/profile_page.dart';
+import 'lecturer_profile_page.dart';
 import 'splash_page.dart';
 import 'login_page.dart';
-import 'theme/app_colors.dart'; // 引入颜色库
+import 'theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'database_helper.dart'; // 引入刚才写的 helper
+import 'database_helper.dart';
 import 'dart:io';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-// 下面是你原有的 MyApp 代码...
 void main() async {
-  // 确保 Flutter 框架初始化
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
-  print("============= [MyUTHM] App 开始启动 =============");
+  print("============= [MyUTHM] App Initializing =============");
 
   try {
-    print("[MyUTHM] 正在尝试连接并初始化本地 SQLite...");
-    // 强制唤醒数据库
+    print("Connecting Database");
+
     await DatabaseHelper.instance.database;
-    print("[MyUTHM] 本地数据库初始化成功！");
+    print("Database Load Successfully");
   } catch (e, stacktrace) {
-    // 如果这里有任何报错（比如外键冲突、表不存在），会立刻在这里打印出来
-    print("❌❌❌ [MyUTHM] 数据库初始化发生致命崩溃: $e");
-    print("堆栈信息: $stacktrace");
+    print("Database Initialization Error $e");
+    print("Message: $stacktrace");
   }
 
-  print("============= [MyUTHM] 进入 UI 渲染 =============");
+  print("============= Starting =============");
   runApp(const DigitalClassroomApp());
 }
 
@@ -55,7 +51,6 @@ class DigitalClassroomApp extends StatefulWidget {
 }
 
 class _DigitalClassroomAppState extends State<DigitalClassroomApp> {
-  // 默认跟随系统主题
   ThemeMode _themeMode = ThemeMode.system;
 
   void updateThemeMode(ThemeMode mode) {
@@ -69,25 +64,30 @@ class _DigitalClassroomAppState extends State<DigitalClassroomApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Digital Classroom',
-
-      // 亮色主题配置
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
         extensions: const [lightColors],
         scaffoldBackgroundColor: lightColors.background,
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
       ),
-
-      // 暗色主题配置
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         extensions: const [darkColors],
         scaffoldBackgroundColor: darkColors.background,
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
       ),
-
       themeMode: _themeMode,
       home: const SplashPage(),
     );
@@ -105,6 +105,7 @@ class MainEntryPage extends StatefulWidget {
 
 class MainEntryPageState extends State<MainEntryPage> {
   int _selectedIndex = 0;
+  int _lastNonScanIndex = 0;
 
   List<Widget> get _pages => [
         widget.role == DashboardRole.lecturer
@@ -115,7 +116,9 @@ class MainEntryPageState extends State<MainEntryPage> {
             : const AcademicPage(),
         const ScanPage(),
         const NotificationPage(),
-        const ProfilePage(),
+        widget.role == DashboardRole.lecturer
+            ? const LecturerProfilePage()
+            : const ProfilePage(),
       ];
 
   void logout() {
@@ -128,23 +131,38 @@ class MainEntryPageState extends State<MainEntryPage> {
 
   void _onItemTapped(int index) {
     setState(() {
+      if (index == 2 && _selectedIndex != 2) {
+        _lastNonScanIndex = _selectedIndex;
+      } else if (index != 2) {
+        _lastNonScanIndex = index;
+      }
       _selectedIndex = index;
     });
   }
 
   void switchToTab(int index) {
     setState(() {
+      if (index == 2 && _selectedIndex != 2) {
+        _lastNonScanIndex = _selectedIndex;
+      } else if (index != 2) {
+        _lastNonScanIndex = index;
+      }
       _selectedIndex = index;
+    });
+  }
+
+  void closeScanPage() {
+    setState(() {
+      _selectedIndex = _lastNonScanIndex;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // 这里的 colors 会根据当前是白天还是黑夜自动切换
     final colors = context.colors;
 
     if (_selectedIndex == 2) {
-      return const ScanPage();
+      return ScanPage(onClose: closeScanPage);
     }
 
     return Scaffold(
@@ -190,8 +208,7 @@ class MainEntryPageState extends State<MainEntryPage> {
                 ),
               ),
             ),
-            _buildNavItem(Icons.notifications_none, 'Notifications', 3,
-                badgeText: '3'),
+            _buildNavItem(Icons.notifications_none, 'Notifications', 3),
             _buildNavItem(Icons.person_outline, 'Profile', 4),
           ],
         ),
