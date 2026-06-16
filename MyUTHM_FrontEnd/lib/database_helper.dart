@@ -17,6 +17,7 @@ class DatabaseHelper {
   static Database? _database;
   static String currentUserId = '';
   static String currentUserRole = '';
+  static String currentUserName = '';
   DatabaseHelper._init();
 
   Future<Database> get database async {
@@ -1761,6 +1762,10 @@ class DatabaseHelper {
       await db.execute(
           'ALTER TABLE Attendance_Sessions ADD COLUMN Session_End_Time TEXT');
     }
+    if (!names.contains('created_at')) {
+      await db.execute(
+          'ALTER TABLE Attendance_Sessions ADD COLUMN Created_At TEXT');
+    }
   }
 
   Future<List<Map<String, dynamic>>> getAttendanceSchedules(
@@ -1775,12 +1780,12 @@ class DatabaseHelper {
     final classTypeSelect =
         hasClassType ? 'Class_Type' : "'LECTURE' AS Class_Type";
     final classTypeFilter = hasClassType
-        ? "AND UPPER(COALESCE(Class_Type, '')) IN ('LECTURE', 'LECTURER', 'TUTORIAL')"
+        ? "AND UPPER(COALESCE(Class_Type, '')) IN ('LECTURE', 'TUTORIAL')"
         : '';
     final classTypeOrder = hasClassType
         ? '''
         CASE
-          WHEN UPPER(Class_Type) IN ('LECTURE', 'LECTURER') THEN 0
+          WHEN UPPER(Class_Type) = 'LECTURE' THEN 0
           WHEN UPPER(Class_Type) = 'TUTORIAL' THEN 1
           ELSE 2
         END,
@@ -1817,7 +1822,7 @@ class DatabaseHelper {
         : "'LECTURE' AS Class_Type";
     return await db.rawQuery('''
       SELECT ats.Session_ID, ats.Schedule_ID, ats.Session_Date,
-             ats.Attendance_Code, ats.Status,
+             ats.Attendance_Code, ats.Status, ats.Created_At,
              $classTypeSelect, ss.Day_Of_Week,
              COALESCE(ats.Session_Start_Time, ss.Start_Time) AS Start_Time,
              COALESCE(ats.Session_End_Time, ss.End_Time) AS End_Time,
@@ -1872,16 +1877,19 @@ class DatabaseHelper {
     await _ensureAttendanceTables(db);
     return await db.transaction<Map<String, dynamic>>((txn) async {
       final code = await _generateAttendanceCode(txn);
+      final createdAt =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
       final sessionId = await txn.rawInsert('''
         INSERT INTO Attendance_Sessions
-          (Schedule_ID, Session_Date, Attendance_Code, Status, Session_Start_Time, Session_End_Time)
-        VALUES (?, ?, ?, 'Open', ?, ?)
+          (Schedule_ID, Session_Date, Attendance_Code, Status, Session_Start_Time, Session_End_Time, Created_At)
+        VALUES (?, ?, ?, 'Open', ?, ?, ?)
       ''', [
         int.tryParse(scheduleId) ?? scheduleId,
         sessionDate,
         code,
         startTime,
         endTime,
+        createdAt,
       ]);
 
       await txn.rawInsert('''

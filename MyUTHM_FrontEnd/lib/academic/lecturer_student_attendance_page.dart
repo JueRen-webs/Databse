@@ -48,7 +48,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
   String? _selectedSessionId;
   String _typeFilter = 'All';
   String _monthFilter = 'All Months';
-  String _recordStatusFilter = 'All';
+  String _studentStatusFilter = 'All';
   String? _loadErrorText;
 
   _MonthlyAttendance get _currentMonthData {
@@ -57,7 +57,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
       var totalAttendances = 0;
       var totalStudents = 0;
 
-      for (final session in _sessions) {
+      for (final session in _filteredHistorySessions) {
         final sessionPresent = _toInt(session['Present_Count']);
         final sessionTotal = _toInt(session['Total_Count']);
         present += sessionPresent;
@@ -102,6 +102,40 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
+  double _sessionAttendancePercent(Map<String, dynamic> session) {
+    final present = _toInt(session['Present_Count']);
+    final total = _toInt(session['Total_Count']);
+    if (total == 0) return 0;
+    return (present / total) * 100;
+  }
+
+  List<Map<String, dynamic>> get _filteredHistorySessions {
+    return _sessions.where((session) {
+      final percent = _sessionAttendancePercent(session);
+      final matchesFrom =
+          _fromPercent == null || percent >= _fromPercent!.clamp(0, 100);
+      final matchesTo =
+          _toPercent == null || percent <= _toPercent!.clamp(0, 100);
+      return matchesFrom && matchesTo;
+    }).toList();
+  }
+
+  Map<String, dynamic>? get _latestCreatedSession {
+    if (_sessions.isEmpty) return null;
+    final sorted = List<Map<String, dynamic>>.from(_sessions);
+    sorted.sort((a, b) {
+      final aCreated = DateTime.tryParse(a['Created_At']?.toString() ?? '');
+      final bCreated = DateTime.tryParse(b['Created_At']?.toString() ?? '');
+      if (aCreated != null && bCreated != null) {
+        return bCreated.compareTo(aCreated);
+      }
+      if (aCreated != null) return -1;
+      if (bCreated != null) return 1;
+      return _toInt(b['Session_ID']).compareTo(_toInt(a['Session_ID']));
+    });
+    return sorted.first;
+  }
+
   List<_StudentAttendanceRecord> get _filteredStudents {
     final query = _searchQuery.trim().toLowerCase();
 
@@ -109,17 +143,10 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
       final matchesSearch = query.isEmpty ||
           student.name.toLowerCase().contains(query) ||
           student.matricNo.toLowerCase().contains(query);
-      final matchesFrom = _fromPercent == null ||
-          student.attendancePercent >= _fromPercent!.clamp(0, 100);
-      final matchesTo = _toPercent == null ||
-          student.attendancePercent <= _toPercent!.clamp(0, 100);
-
-      final matchesStatus = _recordStatusFilter == 'All' ||
-          (_recordStatusFilter == 'Attend' &&
-              student.attendancePercent == 100) ||
-          (_recordStatusFilter == 'Absent' && student.attendancePercent == 0);
-
-      return matchesSearch && matchesFrom && matchesTo && matchesStatus;
+      final matchesStatus = _studentStatusFilter == 'All' ||
+          (_studentStatusFilter == 'Attend' && student.isPresent) ||
+          (_studentStatusFilter == 'Absent' && !student.isPresent);
+      return matchesSearch && matchesStatus;
     }).toList();
   }
 
@@ -175,7 +202,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
         if (_typeFilter == 'All') return true;
         final type = session['Class_Type']?.toString().toUpperCase() ?? '';
         if (_typeFilter == 'Lecture') {
-          return type == 'LECTURE' || type == 'LECTURER';
+          return type == 'LECTURE';
         }
         return type == 'TUTORIAL';
       }).toList();
@@ -258,8 +285,8 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
       errorText = 'Min attendance must be between 0 and 100.';
     } else if (toValue < 0 || toValue > 100) {
       errorText = 'Max attendance must be between 0 and 100.';
-    } else if (fromValue >= toValue) {
-      errorText = 'Min attendance must be smaller than Max attendance.';
+    } else if (fromValue > toValue) {
+      errorText = 'Min attendance cannot be greater than Max attendance.';
     }
 
     if (errorText != null) {
@@ -363,6 +390,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
               setState(() {
                 _selectedSessionId = null;
                 _students = [];
+                _studentStatusFilter = 'All';
                 _currentPage = 0;
               });
             },
@@ -439,6 +467,9 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
   Future<void> _selectSession(Map<String, dynamic> session) async {
     setState(() {
       _selectedSessionId = session['Session_ID'].toString();
+      _studentStatusFilter = 'All';
+      _searchQuery = '';
+      _searchController.clear();
       _isLoading = true;
       _currentPage = 0;
     });
@@ -723,7 +754,9 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
             children: [
               Expanded(
                 child: Text(
-                  'Monthly Attendance Overview',
+                  _selectedSessionId == null
+                      ? 'Monthly Attendance Overview'
+                      : 'Class Attendance Overview',
                   style: GoogleFonts.poppins(
                     color: _textDark,
                     fontWeight: FontWeight.w700,
@@ -731,21 +764,24 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              _MonthDropdown(
-                selectedMonth: _monthFilter,
-                months: _monthOptions,
-                onChanged: (month) {
-                  if (month == null) return;
-                  setState(() {
-                    _monthFilter = month;
-                    _selectedSessionId = null;
-                    _students = [];
-                    _isLoading = true;
-                  });
-                  _loadAttendanceData();
-                },
-              ),
+              if (_selectedSessionId == null) ...[
+                const SizedBox(width: 12),
+                _MonthDropdown(
+                  selectedMonth: _monthFilter,
+                  months: _monthOptions,
+                  onChanged: (month) {
+                    if (month == null) return;
+                    setState(() {
+                      _monthFilter = month;
+                      _selectedSessionId = null;
+                      _students = [];
+                      _studentStatusFilter = 'All';
+                      _isLoading = true;
+                    });
+                    _loadAttendanceData();
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 24),
@@ -757,6 +793,9 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
                 averagePercent: data.averagePercent,
                 presentPercent: data.presentPercent,
                 absentPercent: data.absentPercent,
+                label: _selectedSessionId == null
+                    ? 'Average Attendance'
+                    : 'Class Attendance',
               );
               final legend = _AttendanceLegend(data: data);
 
@@ -788,7 +827,9 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
     final data = _currentMonthData;
     final cards = [
       _SummaryItem(
-        title: 'Average Attendance',
+        title: _selectedSessionId == null
+            ? 'Average Attendance'
+            : 'Class Attendance',
         value: '${data.averagePercent.toStringAsFixed(1)}%',
         icon: Icons.analytics_outlined,
         tint: _primaryBlue,
@@ -857,7 +898,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
           Align(
             alignment: Alignment.centerLeft,
             child: DropdownButton<String>(
-              value: _recordStatusFilter,
+              value: _studentStatusFilter,
               items: const [
                 DropdownMenuItem(value: 'All', child: Text('All')),
                 DropdownMenuItem(value: 'Attend', child: Text('Attend')),
@@ -866,19 +907,21 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
-                  _recordStatusFilter = value;
+                  _studentStatusFilter = value;
                   _currentPage = 0;
                 });
               },
             ),
           ),
           const SizedBox(height: 8),
-          _FilterRow(
+          _StudentSearchCard(
             searchController: _searchController,
-            fromController: _fromController,
-            toController: _toController,
-            errorText: _filterErrorText,
-            onApply: _applyFilter,
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+                _currentPage = 0;
+              });
+            },
           ),
           const SizedBox(height: 18),
           _AttendanceTable(
@@ -947,7 +990,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
                       _showFloatingSnack('No attendance has been created yet.');
                       return;
                     }
-                    _showCodeDialog(_sessions.first);
+                    _showCodeDialog(_latestCreatedSession ?? _sessions.first);
                   },
                   icon: const Icon(Icons.qr_code_2),
                   tooltip: 'Show code',
@@ -956,7 +999,14 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
             ],
           ),
           const SizedBox(height: 12),
-          if (_sessions.isEmpty)
+          _HistoryPercentFilterCard(
+            fromController: _fromController,
+            toController: _toController,
+            errorText: _filterErrorText,
+            onApply: _applyFilter,
+          ),
+          const SizedBox(height: 14),
+          if (_filteredHistorySessions.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 34),
@@ -977,7 +1027,7 @@ class _StudentAttendanceContentState extends State<StudentAttendanceContent> {
             )
           else
             Column(
-              children: _sessions.map((session) {
+              children: _filteredHistorySessions.map((session) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _AttendanceHistoryTile(
@@ -1049,6 +1099,7 @@ class _AttendanceHistoryTile extends StatelessWidget {
     final present =
         int.tryParse(session['Present_Count']?.toString() ?? '0') ?? 0;
     final total = int.tryParse(session['Total_Count']?.toString() ?? '0') ?? 0;
+    final percentage = total == 0 ? 0.0 : (present / total) * 100;
 
     return Material(
       color: Colors.white,
@@ -1106,6 +1157,11 @@ class _AttendanceHistoryTile extends StatelessWidget {
                         _HistoryMetaChip(
                           icon: Icons.groups_outlined,
                           label: '$present/$total attend',
+                        ),
+                        const SizedBox(height: 4),
+                        _HistoryMetaChip(
+                          icon: Icons.percent_rounded,
+                          label: '${percentage.toStringAsFixed(1)}% attendance',
                         ),
                         const SizedBox(height: 9),
                         Align(
@@ -1253,6 +1309,9 @@ class _StudentAttendanceRecord {
     required this.matricNo,
     required this.attendancePercent,
   });
+
+  bool get isPresent => attendancePercent == 100;
+  String get statusLabel => isPresent ? 'Attend' : 'Absent';
 }
 
 class _SummaryItem {
@@ -1350,11 +1409,13 @@ class _AttendanceDoughnutChart extends StatelessWidget {
   final double averagePercent;
   final double presentPercent;
   final double absentPercent;
+  final String label;
 
   const _AttendanceDoughnutChart({
     required this.averagePercent,
     required this.presentPercent,
     required this.absentPercent,
+    required this.label,
   });
 
   @override
@@ -1390,7 +1451,7 @@ class _AttendanceDoughnutChart extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Average Attendance',
+                    label,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
                       color: _StudentAttendanceContentState._textMuted,
@@ -1655,15 +1716,74 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _FilterRow extends StatelessWidget {
+class _StudentSearchCard extends StatelessWidget {
   final TextEditingController searchController;
+  final ValueChanged<String> onChanged;
+
+  const _StudentSearchCard({
+    required this.searchController,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE4EBF8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _StudentAttendanceContentState._primaryBlue
+                      .withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.search,
+                  color: _StudentAttendanceContentState._primaryBlue,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Search Student',
+                  style: GoogleFonts.poppins(
+                    color: _StudentAttendanceContentState._textDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SearchField(
+            controller: searchController,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryPercentFilterCard extends StatelessWidget {
   final TextEditingController fromController;
   final TextEditingController toController;
   final String? errorText;
   final VoidCallback onApply;
 
-  const _FilterRow({
-    required this.searchController,
+  const _HistoryPercentFilterCard({
     required this.fromController,
     required this.toController,
     required this.errorText,
@@ -1672,124 +1792,133 @@ class _FilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 760;
-        final search = _SearchField(controller: searchController);
-        final range = Row(
-          children: [
-            Expanded(
-              child: _PercentField(
-                label: 'Min',
-                controller: fromController,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _PercentField(
-                label: 'Max',
-                controller: toController,
-              ),
-            ),
-          ],
-        );
-
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFF),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE4EBF8)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFF),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE4EBF8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: _StudentAttendanceContentState._primaryBlue
+                      .withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.filter_alt_outlined,
+                  color: _StudentAttendanceContentState._primaryBlue,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Filter Attendance Percentage',
+                  style: GoogleFonts.poppins(
+                    color: _StudentAttendanceContentState._textDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final range = Row(
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: _StudentAttendanceContentState._primaryBlue
-                          .withValues(alpha: 0.09),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.filter_alt_outlined,
-                      color: _StudentAttendanceContentState._primaryBlue,
-                      size: 19,
+                  Expanded(
+                    child: _PercentField(
+                      label: 'Min',
+                      controller: fromController,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Filter Students',
-                      style: GoogleFonts.poppins(
-                        color: _StudentAttendanceContentState._textDark,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+                    child: _PercentField(
+                      label: 'Max',
+                      controller: toController,
                     ),
                   ),
-                  if (!isCompact) _ApplyButton(onPressed: onApply),
                 ],
-              ),
-              const SizedBox(height: 12),
-              if (isCompact) ...[
-                search,
-                const SizedBox(height: 10),
-                range,
-                const SizedBox(height: 10),
-                _ApplyButton(onPressed: onApply),
-              ] else
-                Row(
+              );
+
+              if (constraints.maxWidth < 520) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(flex: 3, child: search),
-                    const SizedBox(width: 12),
-                    Expanded(flex: 2, child: range),
+                    range,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _ApplyButton(onPressed: onApply),
+                    ),
                   ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: range),
+                  const SizedBox(width: 12),
+                  _ApplyButton(onPressed: onApply),
+                ],
+              );
+            },
+          ),
+          if (errorText != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFE53935),
+                  size: 17,
                 ),
-              if (errorText != null) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Color(0xFFE53935),
-                      size: 17,
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    errorText!,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFE53935),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        errorText!,
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFFE53935),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
 
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
+  final ValueChanged<String>? onChanged;
 
-  const _SearchField({required this.controller});
+  const _SearchField({
+    required this.controller,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _InputFrame(
       child: TextField(
         controller: controller,
+        onChanged: onChanged,
         style: GoogleFonts.poppins(fontSize: 13),
         decoration: InputDecoration(
           hintText: 'Search student',
@@ -2052,31 +2181,37 @@ class _AttendanceStudentCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _AttendancePercentBadge(percent: student.attendancePercent),
+          _AttendanceStatusBadge(isPresent: student.isPresent),
         ],
       ),
     );
   }
 }
 
-class _AttendancePercentBadge extends StatelessWidget {
-  final int percent;
+class _AttendanceStatusBadge extends StatelessWidget {
+  final bool isPresent;
 
-  const _AttendancePercentBadge({required this.percent});
+  const _AttendanceStatusBadge({required this.isPresent});
 
   @override
   Widget build(BuildContext context) {
+    final color = isPresent
+        ? _StudentAttendanceContentState._primaryBlue
+        : const Color(0xFFC62828);
+    final background = isPresent
+        ? _StudentAttendanceContentState._primaryBlue.withValues(alpha: 0.08)
+        : const Color(0xFFFFEBEE);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color:
-            _StudentAttendanceContentState._primaryBlue.withValues(alpha: 0.08),
+        color: background,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        '$percent%',
+        isPresent ? 'Attend' : 'Absent',
         style: GoogleFonts.poppins(
-          color: _StudentAttendanceContentState._primaryBlue,
+          color: color,
           fontWeight: FontWeight.w800,
           fontSize: 12,
         ),
@@ -2098,7 +2233,7 @@ class _TableHeader extends StatelessWidget {
           _HeaderCell('#', width: 56),
           _HeaderCell('Student Name', flex: 3),
           _HeaderCell('Matric No.', flex: 2),
-          _HeaderCell('Attendance %', flex: 2, alignRight: true),
+          _HeaderCell('Status', flex: 2, alignRight: true),
         ],
       ),
     );
@@ -2181,8 +2316,7 @@ class _AttendanceTableRow extends StatelessWidget {
             flex: 2,
             child: Align(
               alignment: Alignment.centerRight,
-              child:
-                  _AttendancePercentBadge(percent: student.attendancePercent),
+              child: _AttendanceStatusBadge(isPresent: student.isPresent),
             ),
           ),
         ],

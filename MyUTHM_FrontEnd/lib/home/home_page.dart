@@ -34,9 +34,25 @@ class HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<HomePageContent> {
+  late final Future<String> _studentNameFuture;
+
   @override
   void initState() {
     super.initState();
+    _studentNameFuture = _loadStudentName();
+  }
+
+  Future<String> _loadStudentName() async {
+    final savedName = DatabaseHelper.currentUserName.trim();
+    if (savedName.isNotEmpty) return savedName;
+
+    final userId = DatabaseHelper.currentUserId;
+    if (userId.isEmpty) return 'Student';
+
+    final profile = await DatabaseHelper.instance.getStudentProfile(userId);
+    final name = profile?['Name']?.toString().trim() ?? '';
+    if (name.isNotEmpty) return name;
+    return userId;
   }
 
   String _getFormattedDate() {
@@ -180,22 +196,28 @@ class _HomePageContentState extends State<HomePageContent> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            "${_getGreeting()} Lee Rou",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              color: colors.surface,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              shadows: const [
-                                Shadow(
-                                  offset: Offset(0, 1),
-                                  blurRadius: 4,
-                                  color: Colors.black45,
-                                )
-                              ],
-                            ),
+                          FutureBuilder<String>(
+                            future: _studentNameFuture,
+                            builder: (context, snapshot) {
+                              final name = snapshot.data ?? 'Lee Rou';
+                              return Text(
+                                "${_getGreeting()} $name",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  color: colors.surface,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  shadows: const [
+                                    Shadow(
+                                      offset: Offset(0, 1),
+                                      blurRadius: 4,
+                                      color: Colors.black45,
+                                    )
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),

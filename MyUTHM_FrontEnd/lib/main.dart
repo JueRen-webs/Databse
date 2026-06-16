@@ -122,6 +122,9 @@ class MainEntryPageState extends State<MainEntryPage> {
       ];
 
   void logout() {
+    DatabaseHelper.currentUserId = '';
+    DatabaseHelper.currentUserRole = '';
+    DatabaseHelper.currentUserName = '';
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginPage()),

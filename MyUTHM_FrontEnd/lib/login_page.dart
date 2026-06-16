@@ -32,9 +32,8 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-
-      var user = await DatabaseHelper.instance.loginWithExistingAccount(username, password);
-
+      var user = await DatabaseHelper.instance
+          .loginWithExistingAccount(username, password);
 
       if (!mounted) return;
 
@@ -45,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         DatabaseHelper.currentUserId = username;
         DatabaseHelper.currentUserRole = user['Role'] ?? '';
+        DatabaseHelper.currentUserName = user['Name']?.toString() ?? '';
 
         print("Login Success: ${user['Name']}, Role: ${user['Role']}");
 
@@ -55,7 +55,6 @@ class _LoginPageState extends State<LoginPage> {
           currentRole = DashboardRole.lecturer;
         }
 
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -65,20 +64,17 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         );
-
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invalid Matric No or Password')),
         );
       }
     } catch (e) {
-
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
       });
-
 
       print("❌ Database CRASH: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,7 +150,8 @@ class _LoginPageState extends State<LoginPage> {
                     backgroundColor: colors.brandPrimary),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("LOGIN", style: TextStyle(color: Colors.white)),
+                    : const Text("LOGIN",
+                        style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
